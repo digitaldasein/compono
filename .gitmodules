@@ -1,0 +1,3 @@
+[submodule "lib/libcompono"]
+	path = lib/libcompono
+	url = https://gitlab.com/digital-dasein/software/html-presentations/libcompono
