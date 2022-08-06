@@ -1,7 +1,7 @@
 # Compono
 
-A command-line utility for creating, serving, and publishing component-based 
-HTML presentations, based on the [`libcompono` 
+A command-line utility for creating and publishing component-based HTML 
+presentations, based on the [`libcompono` 
 library](https://gitlab.com/digital-dasein/software/html-presentations/libcompono).
 
 ## Submodules
@@ -12,7 +12,7 @@ library](https://gitlab.com/digital-dasein/software/html-presentations/libcompon
 git submodule update --init --recursive --remote --merge
 ```
 
-### Build
+### Build libcompono
 
 ```sh
 cd lib/libcompono \
@@ -20,4 +20,8 @@ cd lib/libcompono \
   && yarn build
 ```
 
-###
+### Build shower
+
+```sh
+cd lib/libcompono && yarn build:shower
+```
