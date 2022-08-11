@@ -1,0 +1,72 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: compono
+Upstream-Contact: Senne Van Baelen <senne@digitaldasein.org>
+Source: https://gitlab.com/digital-dasein/software/html-presentations/compono
+
+Files: examples/*
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+Files: docs/*
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# avoid licensing for dotfiles
+Files: *.editorconfig *.gitignore **/.gitlab-ci.yml .gitlab-ci.yml
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# avoid ugly .license files for JSON configs
+Files: **/*.json *.json
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# avoid license headers in root-level config files
+Files: *.config*
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# avoid license headers in root-level yarn stuff
+Files: **/yarn.lock yarn.lock
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# avoid licenses in test files
+#Files: **/tests/*
+#Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+#Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+#Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+#License: MIT
+
+# npmignore
+Files: .npmignore  **/.npmignore
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# .gitmodules
+Files: .gitmodules
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# Cargo.*
+Files: Cargo.*
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
