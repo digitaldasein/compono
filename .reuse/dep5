@@ -70,3 +70,10 @@ Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
 Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
 Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
 License: MIT
+
+# templates
+Files: src/templates/*
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT

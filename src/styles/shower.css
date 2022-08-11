@@ -12,12 +12,28 @@
  *
  * Containing:
  * ==========
+ * - DD-COMPLIANCE
  * - SHOWER MAIN
  * - PROGRESS
  * - SLIDE
  * - REGION
  *
  */
+
+/* ============= */
+/* DD COMPLIANCE */
+/* ============= */
+
+dd-slide-collection {
+    margin:0;
+    /*max-height:0;*/
+}
+
+dd-slide,
+dd-titlepage,
+.slide {
+    overflow:hidden;
+}
 
 /* ============= */
 /* SHOWER MAIN   */
@@ -67,18 +83,6 @@
         -webkit-print-color-adjust: exact;
         text-rendering: geometricPrecision;
     }
-}
-
-
-dd-slide-collection {
-    margin:0;
-    max-height:0;
-}
-
-dd-slide,
-dd-titlepage,
-.slide {
-    overflow:hidden;
 }
 
 /* ========== */

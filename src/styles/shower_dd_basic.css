@@ -7,19 +7,33 @@
  */
 
 /* ###############################
- * # SHOWER DD-BASIC CSS
+ * # SHOWER CSS
  * ##############################
  *
  * Containing:
  * ==========
- * - DD-BASIC
+ * - DD-COMPLIANCE
  * - SHOWER MAIN
- * - SHOWER PROGRESS
- * - SHOWER SLIDE
- * - SHOWER REGION
- * - FONTS
+ * - PROGRESS
+ * - SLIDE
+ * - REGION
  *
  */
+
+/* ============= */
+/* DD COMPLIANCE */
+/* ============= */
+
+dd-slide-collection {
+    margin:0;
+    /*max-height:0;*/
+}
+
+dd-slide,
+dd-titlepage,
+.slide {
+    overflow:hidden;
+}
 
 /* ============= */
 /* SHOWER MAIN   */
@@ -69,18 +83,6 @@
         -webkit-print-color-adjust: exact;
         text-rendering: geometricPrecision;
     }
-}
-
-
-dd-slide-collection {
-    margin:0;
-    max-height:0;
-}
-
-dd-slide,
-dd-titlepage,
-.slide {
-    overflow:hidden;
 }
 
 /* ========== */

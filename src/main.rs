@@ -16,8 +16,6 @@ use std::fs;
 use std::process;
 use clap::{Parser, ArgEnum, Subcommand};
 use anyhow::{Context, Result};
-use const_format::concatcp;
-use const_format::formatcp;
 
 /*---------------------------------------------------------------------
  * Config
@@ -30,38 +28,13 @@ const DIR_STYLES:&str = "./styles";
 
 const LIBCOMPONO_FNAME_OUT:&str = "libcompono.js";
 const LIBCOMPONO_STR:&str = include_str!("../lib/libcompono/dist/libcompono.min.js");
-const LIBCOMPONO_INLINE_BODY:&str = concat!(
-    "  \n\n<!-- ############## -->\n",
-    "    <!-- inline scripts -->\n",
-    "    <!-- ############## -->\n",
-    "    <script>",
-    include_str!("../lib/libcompono/dist/libcompono.min.js"),
-    "\n</script>\n",
-    "</body>",
-    );
-const LIBCOMPONO_SHOWER_INLINE_BODY:&str = concat!(
-    "  <!-- ############## -->\n",
-    "    <!-- inline scripts -->\n",
-    "    <!-- ############## -->\n",
-    "    <script>",
-    include_str!("../lib/libcompono/dist/libcompono.min.js"),
-    include_str!("../lib/libcompono/examples/shower/lib/shower/core/dist/shower.js"),
-    "\n</script>\n",
-    "</body>",
-    );
-
-const LIBCOMPONO_SCRIPT:&str = formatcp!(r#"<script src="{0}/{1}"></script>"#,
-                                         DIR_LIB, LIBCOMPONO_FNAME_OUT);
 
 const SHOWER_FNAME_OUT_JS:&str = "shower.js";
 const SHOWER_STR_JS:&str = include_str!("../lib/libcompono/examples/shower/lib/shower/core/dist/shower.js");
-const SHOWER_SCRIPT:&str = formatcp!(r#"<script src="{0}/{1}"></script>"#,
-                                     DIR_LIB, SHOWER_FNAME_OUT_JS);
-const SHOWER_BODY_OPEN:&str = r#"<body class="shower">"#;
+
 const SHOWER_FNAME_OUT_CSS:&str = "shower.css";
 const SHOWER_STR_CSS:&str = include_str!("./styles/shower.css");
-const SHOWER_CSS_LINK:&str = formatcp!(r#"<link rel="stylesheet" href="{0}/{1}">"#,
-                                       DIR_STYLES, SHOWER_FNAME_OUT_CSS);
+
 const SHOWER_FONT_BI:&[u8] = include_bytes!("./styles/fonts/roboto-bold-italic.woff2");
 const SHOWER_FONT_B:&[u8] = include_bytes!("./styles/fonts/roboto-bold.woff2");
 const SHOWER_FONT_I:&[u8] = include_bytes!("./styles/fonts/roboto-italic.woff2");
@@ -74,6 +47,7 @@ const HTML_MINIMAL:&str = include_str!("./templates/minimal.html");
 const HTML_MINIMAL_VIM:&str = include_str!("./templates/minimal_vim.html");
 
 const CSS_ROBOTO:&str = include_str!("./styles/roboto_font.css");
+const CSS_ROBOTO_INLINE:&str = include_str!("./styles/roboto_font_inline.css");
 const CSS_ROBOTO_FNAME:&str = "roboto_font.css";
 const CSS_DD_BASIC:&str = include_str!("./styles/dd_basic.css");
 const CSS_SHOWER_DD_BASIC:&str = include_str!("./styles/shower_dd_basic.css");
@@ -129,6 +103,10 @@ enum Commands {
         /// Include shower's presentation javascript core
         #[clap(short, long, action)]
         shower: bool,
+
+        /// Do not inline font binaries in CSS (include separate WOFF files)
+        #[clap(short, long, action)]
+        no_inline_fonts: bool,
     },
 }
 
@@ -160,7 +138,7 @@ enum UpdateHeaderOpt {
 
 //println!("{}", Path::new("/etc/hosts").exists());
 
-fn add_fonts(styles_dir:std::path::PathBuf)
+fn add_font_files(styles_dir:std::path::PathBuf)
              -> Result<(), Box<dyn std::error::Error>> {
     let fonts_dir = styles_dir.join("fonts");
     fs::create_dir_all(fonts_dir.clone())?;
@@ -223,6 +201,7 @@ fn create_presentation(template:&Template,
                        output_dir:&Option<std::path::PathBuf>,
                        output_filename:&Option<std::path::PathBuf>,
                        shower:&bool,
+                       no_inline_fonts:&bool,
                        inline:&bool)
                        -> Result<(), Box<dyn std::error::Error>> {
 
@@ -323,15 +302,27 @@ from `{}`", tpath.display()))?
         fs::create_dir_all(lib_dir.clone())?;
 
         // stylesheets
+        // roboto font
         if *shower || matches!(css, Stylesheet::DdBasic)
                    || matches!(css, Stylesheet::ShowerDdBasic) {
 
-            update_header(&mut v_html_content,
-                          CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
-            let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
-            fs::write(output_path_css.clone(), CSS_ROBOTO)
-                .with_context(|| format!("Failed to write file `{}`",
-                        output_path_css.display()))?;
+            if *no_inline_fonts {
+                add_font_files(styles_dir.clone())?;
+                update_header(&mut v_html_content,
+                    CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
+                let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
+                fs::write(output_path_css.clone(), CSS_ROBOTO)
+                    .with_context(|| format!("Failed to write file `{}`",
+                            output_path_css.display()))?;
+
+            } else {
+                update_header(&mut v_html_content,
+                    CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
+                let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
+                fs::write(output_path_css.clone(), CSS_ROBOTO_INLINE)
+                    .with_context(|| format!("Failed to write file `{}`",
+                            output_path_css.display()))?;
+            }
 
         }
         if *shower {
@@ -342,7 +333,7 @@ from `{}`", tpath.display()))?
                 .with_context(|| format!("Failed to write file `{}`",
                         output_path_shower_css.display()))?;
 
-            //add_fonts(styles_dir.clone())?;
+            //add_font_files(styles_dir.clone())?;
         }
 
         // include stylesheet
@@ -351,7 +342,7 @@ from `{}`", tpath.display()))?
             Stylesheet::DdBasic => {
                 let fname = "dd_basic.css";
                 let output_path_css = styles_dir.join(fname);
-                //add_fonts(styles_dir.clone())?;
+                //add_font_files(styles_dir.clone())?;
                 fs::write(output_path_css.clone(), CSS_DD_BASIC)
                     .with_context(|| format!("Failed to write file `{}`",
                             output_path_css.display()))?;
@@ -361,7 +352,7 @@ from `{}`", tpath.display()))?
             Stylesheet::ShowerDdBasic => {
                 let fname = "shower_dd_basic.css";
                 let output_path_css = styles_dir.join(fname);
-                //add_fonts(styles_dir.clone())?;
+                //add_font_files(styles_dir.clone())?;
                 fs::write(output_path_css.clone(), CSS_SHOWER_DD_BASIC)
                     .with_context(|| format!("Failed to write file `{}`",
                             output_path_css.display()))?;
@@ -465,7 +456,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // matches just as you would the top level cmd
     match &cli.command {
         Commands::New { template, template_path, inline,
-                        css, css_path,
+                        css, css_path, no_inline_fonts,
                         output_dir, output_filename, shower } => {
             create_presentation(&template,
                                 template_path,
@@ -474,6 +465,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 output_dir,
                                 output_filename,
                                 shower,
+                                no_inline_fonts,
                                 inline)?;
         }
     }
