@@ -1,0 +1,10 @@
+pages:
+  image: busybox
+  script:
+    - mkdir .public
+    - cp -r * .public
+    - mv .public public
+  stage: deploy
+  artifacts:
+    paths:
+      - public

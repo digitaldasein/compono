@@ -1,4 +1,3 @@
-# compono CI/CD
 name: compono-deploy
 on:
   push:

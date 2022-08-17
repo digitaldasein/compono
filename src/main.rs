@@ -61,6 +61,13 @@ const DEFAULT_SSH_KEY_PATH_STR:&str = "$HOME/.ssh/id_rsa";
 const DEFAULT_SSH_KEY_HOME:&str = ".ssh/id_rsa";
 const DEFAULT_SSH_KEY_PASSPHRASE:&str = "None";
 
+const CI_COMMENT:&str = "# Compono CI config pages";
+const GITHUB_CI:&str = include_str!("./ci-configs/github.yml");
+const GITHUB_CI_PATH:&str = ".github/workflows/deploy.yml";
+
+const GITLAB_CI:&str = include_str!("./ci-configs/gitlab.yml");
+const GITLAB_CI_PATH:&str = ".gitlab-ci.yml";
+
 // CLI
 #[derive(Parser)]
 #[clap(author, version,  long_about = None)]
@@ -105,10 +112,6 @@ enum Commands {
         #[clap(short='C', long, value_parser)]
         css_path: Option<std::path::PathBuf>,
 
-        /// Inline all javascript code in the HTML file
-        #[clap(short, long, action)]
-        inline: bool,
-
         /// Include shower's presentation javascript core
         #[clap(short, long, action)]
         shower: bool,
@@ -131,22 +134,22 @@ enum Commands {
 
         /// SSH passphrase for gitlab/github
         #[clap(short='p', long, value_parser, default_value=DEFAULT_SSH_KEY_PASSPHRASE)]
-        ssh_passphrase: String,
+        ssh_pass: String,
 
         /// Remote endpoint (IP address/URL). By default (git-context), it
         /// uses the remote origin endpoint from the git repo config
         #[clap(short='r', long, value_parser, default_value="auto")]
         remote_endpoint: String,
 
-        /// Git* commit message when pushing to remote
+        /// Git commit message when pushing to remote
         #[clap(short, long, value_parser,
                default_value="Publish HTML presentation")]
         commit_msg: String,
 
-        /// Publication method (each method has its own implications,
-        /// and thus might require additional arguments)
+        /// Publication method (for the default `auto` option, the preferred method is
+        /// guessed)
         #[clap(short, long, value_parser, arg_enum,
-               default_value_t = Method::Gitlab) ]
+               default_value_t = Method::Auto) ]
         method: Method,
 
         /// Determine which files to include for publishing. (Note that when
@@ -189,8 +192,9 @@ enum PublishIncludeOpt {
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Method {
-    Gitlab,
+    Auto,
     Github,
+    Gitlab,
     Scp
 }
 
@@ -345,6 +349,9 @@ fn user_input(question:&str) -> String {
 fn in_gitignore(gitignore_path:&Path, entry:&Path)
                 -> Result<bool, Box<dyn std::error::Error>> {
 
+    /* could probably better read gitignore content one time and pass it as
+     * arg in this function */
+
     if !gitignore_path.exists() {
         return Ok(false)
     }
@@ -458,6 +465,136 @@ fn include_files(input_dir:&std::path::PathBuf,
     Ok(())
 }
 
+fn add_ci_configs(ci_path:&Path, ci_content:&str)
+                  -> Result<(), Box<dyn std::error::Error>> {
+
+    if ci_path.exists() {
+        let ci_content_orig = std::fs::read_to_string(ci_path)
+            .with_context(|| format!("Failed to read CI content from `{}`",
+                                     ci_path.display()))?;
+
+    } else {
+        let ci = format!("{}\n{}", CI_COMMENT, ci_content);
+        fs::write(ci_path, ci)
+            .with_context(|| format!("Failed to write CI file `{}`",
+                                     ci_path.display()))?;
+    }
+
+    Ok (())
+}
+
+fn publish_to_git(input_dir:&std::path::PathBuf,
+                  commit_msg:&str,
+                  platform:&str,
+                  ssh_key:&std::path::PathBuf,
+                  ssh_pass:&str,
+                  v_files_incl: & mut Vec::<String>,
+                  v_files_excl: & mut Vec::<String>)
+                  -> Result<(), Box<dyn std::error::Error>> {
+
+    let repo = match Repository::open(input_dir) {
+        Ok(repo) => repo,
+        Err(e) => panic!("Failed to open git repository: {}", e),
+    };
+
+    let cfg = repo.config()?;
+    let cfg_remote_url:String = if let Ok(url) = cfg.get_entry("remote.origin.url"){
+        url.value().unwrap().to_string()
+    } else {
+        "?".to_string()
+    };
+
+    let git_platform = match platform {
+        "git-auto" => {
+            if cfg_remote_url.contains("github"){ "github" }
+            else if cfg_remote_url.contains("gitlab") { "gitlab" }
+            else { panic!("Failed to auto-detect git platform from remote URL") }
+        },
+        "gitlab" => { "gitlab" },
+        "github" => { "github" },
+         _ => { panic!("Could not derive git platform") }
+    };
+
+    match git_platform {
+        "github" => {
+            let ci_path = Path::new(input_dir).join(GITHUB_CI_PATH);
+            v_files_incl.push(ci_path.to_str().unwrap().to_string());
+            add_ci_configs(&ci_path, GITHUB_CI)?;
+        }
+        "gitlab" => {
+            let ci_path = Path::new(input_dir).join(GITLAB_CI_PATH);
+            v_files_incl.push(ci_path.to_str().unwrap().to_string());
+            add_ci_configs(&ci_path, GITLAB_CI)?;
+        }
+        _ => { panic!("Git platform not recognised") }
+    }
+
+    git_add(&repo, v_files_incl)?;
+    let (commit, three_id) = git_commit(&repo, &commit_msg);
+
+    let mut cb = RemoteCallbacks::new();
+    let mut push_opts = PushOptions::new();
+
+    let head = repo.head().unwrap();
+    let refspecs: &[&str] = &[head.name().unwrap()];
+
+    // https://github.com/rust-lang/git2-rs/issues/823
+    if ssh_key.to_str().unwrap() == DEFAULT_SSH_KEY_PATH_STR {
+
+        cb.credentials(|_url, username_from_url, _allowed_types| {
+            Cred::ssh_key(
+                username_from_url.unwrap(),
+                None,
+                Path::new(&format!("{0}/{1}", env::var("HOME").unwrap(),
+                                   DEFAULT_SSH_KEY_HOME)),
+                Some(ssh_pass),
+            )
+        });
+    } else {
+        cb.credentials(|_url, username_from_url, _allowed_types| {
+            Cred::ssh_key(
+                username_from_url.unwrap(),
+                None,
+                ssh_key,
+                Some(ssh_pass),
+            )
+        });
+    };
+
+    push_opts.remote_callbacks(cb);
+
+    //let pushOption: Option<&mut PushOptions<'_>> = Some(pushOpts);
+    let mut remote:Remote = t!(repo.find_remote("origin"));
+
+    // push
+    println!("Pushing to remote...");
+    remote.push(refspecs, Some(&mut push_opts))
+        .with_context(|| format!("Failed to push to remote repo. \
+Make sure to provide proper SSH credentials by using options \
+`--ssh-key` and/or `--ssh-pass`{}", ""))?;
+
+    println!("Successfully published!");
+
+    if git_platform == "github" {
+        // TODO
+    } else if git_platform == "gitlab" {
+        if cfg_remote_url.contains("@") {
+            let v_split_at: Vec<&str> = cfg_remote_url.split("@").collect();
+            let v_split_dot: Vec<&str> = v_split_at[1].split(".").collect();
+            let v_split_colon: Vec<&str> = v_split_at[1].split(":").collect();
+            let v_split_slash: Vec<&str> = v_split_colon[1].split("/").collect();
+
+            let remote_url = format!("https://{0}.{1}.io/{2}",
+                                     v_split_slash[0],
+                                     v_split_dot[0],
+                                     v_split_slash[1..].join("/")
+                                     .replace(".git", "/"));
+            println!("Your presentation will shortly be available at: {}", remote_url);
+        }
+    }
+    Ok(())
+}
+
 /*---------------------------------------------------------------------
  * Main functinos
  *---------------------------------------------------------------------*/
@@ -469,8 +606,7 @@ fn create_presentation(template:&Template,
                        output_dir:&Option<std::path::PathBuf>,
                        output_filename:&Option<std::path::PathBuf>,
                        shower:&bool,
-                       no_inline_fonts:&bool,
-                       inline:&bool)
+                       no_inline_fonts:&bool)
                        -> Result<(), Box<dyn std::error::Error>> {
 
     // set output filename
@@ -532,171 +668,136 @@ from `{}`", tpath.display()))?
                                                     html_split_body_end[0].to_string(),
                                                     html_split_body_end[1].to_string()]);
 
-    if *inline {
-        // https://github.com/jrit/web-resource-inliner>
-        // <https://github.com/parcel-bundler/parcel/issues/1704#issuecomment-751494287>
-        //
-        // NOTE:
-        //
-        // <https://github.com/jrit/web-resource-inliner/issues/73>
-        // font binaries not inlines yet, so Roboto font
-        // needs to be installed on the system
-        //
-        // E.g. on debian:
-        //
-        //  $ sudo apt install fonts-roboto
-        //
-        // CentOS
-        //
-        //  $ sudo yum makecache
-        //  $ sudo yum -y install google-roboto-fonts
-        //
+    fs::create_dir_all(styles_dir.clone())?;
+    fs::create_dir_all(lib_dir.clone())?;
 
-        /*<link rel="stylesheet"*/
-          /*href="https://fonts.googleapis.com/css?family=Tangerine">*/
-        /*let shower_style = formatcp!("{}\n  </style>",*/
-                                     /*SHOWER_STR_CSS);*/
+    // stylesheets
+    // roboto font
+    if *shower || matches!(css, Stylesheet::DdBasic)
+               || matches!(css, Stylesheet::ShowerDdBasic) {
 
-        /*if *shower {*/
-            /*html_template.replace("</body>", LIBCOMPONO_SHOWER_INLINE_BODY)*/
-                         /*.replace("<body>", SHOWER_BODY_OPEN)*/
-                         /*.replace("</dd-slide-collection>", "") // prog_html*/
-                         /*.replace("</style>", shower_style)*/
-        /*} else {*/
-            /*html_template.replace("</body>", LIBCOMPONO_INLINE_BODY)*/
-        /*}*/
-    } else {
-        fs::create_dir_all(styles_dir.clone())?;
-        fs::create_dir_all(lib_dir.clone())?;
-
-        // stylesheets
-        // roboto font
-        if *shower || matches!(css, Stylesheet::DdBasic)
-                   || matches!(css, Stylesheet::ShowerDdBasic) {
-
-            if *no_inline_fonts {
-                add_font_files(styles_dir.clone())?;
-                update_header(&mut v_html_content,
-                    CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
-                let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
-                fs::write(output_path_css.clone(), CSS_ROBOTO)
-                    .with_context(|| format!("Failed to write file `{}`",
-                            output_path_css.display()))?;
-
-            } else {
-                update_header(&mut v_html_content,
-                    CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
-                let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
-                fs::write(output_path_css.clone(), CSS_ROBOTO_INLINE)
-                    .with_context(|| format!("Failed to write file `{}`",
-                            output_path_css.display()))?;
-            }
-
-        }
-        if *shower {
+        if *no_inline_fonts {
+            add_font_files(styles_dir.clone())?;
             update_header(&mut v_html_content,
-                          SHOWER_FNAME_OUT_CSS, UpdateHeaderOpt::Css);
-            let output_path_shower_css = styles_dir.join(SHOWER_FNAME_OUT_CSS);
-            fs::write(output_path_shower_css.clone(), SHOWER_STR_CSS)
+                CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
+            let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
+            fs::write(output_path_css.clone(), CSS_ROBOTO)
                 .with_context(|| format!("Failed to write file `{}`",
-                        output_path_shower_css.display()))?;
+                        output_path_css.display()))?;
 
+        } else {
+            update_header(&mut v_html_content,
+                CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
+            let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
+            fs::write(output_path_css.clone(), CSS_ROBOTO_INLINE)
+                .with_context(|| format!("Failed to write file `{}`",
+                        output_path_css.display()))?;
+        }
+
+    }
+    if *shower {
+        update_header(&mut v_html_content,
+                      SHOWER_FNAME_OUT_CSS, UpdateHeaderOpt::Css);
+        let output_path_shower_css = styles_dir.join(SHOWER_FNAME_OUT_CSS);
+        fs::write(output_path_shower_css.clone(), SHOWER_STR_CSS)
+            .with_context(|| format!("Failed to write file `{}`",
+                    output_path_shower_css.display()))?;
+
+        //add_font_files(styles_dir.clone())?;
+    }
+
+    // include stylesheet
+    match css {
+        Stylesheet::None => { () }
+        Stylesheet::DdBasic => {
+            let fname = "dd_basic.css";
+            let output_path_css = styles_dir.join(fname);
             //add_font_files(styles_dir.clone())?;
+            fs::write(output_path_css.clone(), CSS_DD_BASIC)
+                .with_context(|| format!("Failed to write file `{}`",
+                        output_path_css.display()))?;
+            update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
+
         }
+        Stylesheet::ShowerDdBasic => {
+            let fname = "shower_dd_basic.css";
+            let output_path_css = styles_dir.join(fname);
+            //add_font_files(styles_dir.clone())?;
+            fs::write(output_path_css.clone(), CSS_SHOWER_DD_BASIC)
+                .with_context(|| format!("Failed to write file `{}`",
+                        output_path_css.display()))?;
 
-        // include stylesheet
-        match css {
-            Stylesheet::None => { () }
-            Stylesheet::DdBasic => {
-                let fname = "dd_basic.css";
-                let output_path_css = styles_dir.join(fname);
-                //add_font_files(styles_dir.clone())?;
-                fs::write(output_path_css.clone(), CSS_DD_BASIC)
-                    .with_context(|| format!("Failed to write file `{}`",
-                            output_path_css.display()))?;
-                update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
-
-            }
-            Stylesheet::ShowerDdBasic => {
-                let fname = "shower_dd_basic.css";
-                let output_path_css = styles_dir.join(fname);
-                //add_font_files(styles_dir.clone())?;
-                fs::write(output_path_css.clone(), CSS_SHOWER_DD_BASIC)
-                    .with_context(|| format!("Failed to write file `{}`",
-                            output_path_css.display()))?;
-
-                update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
-            }
+            update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
         }
-        // custom stylesheet
-        if let Some(css_path) = css_path {
-            let custom_css_content = std::fs::read_to_string(css_path)
-                .with_context(|| format!("Failed to read CSS stylesheet \
+    }
+    // custom stylesheet
+    if let Some(css_path) = css_path {
+        let custom_css_content = std::fs::read_to_string(css_path)
+            .with_context(|| format!("Failed to read CSS stylesheet \
 from `{}`", css_path.display()))?;
 
-            if let Some(fname) = css_path.file_name() {
-                let output_path_css = styles_dir.join(fname);
-                fs::write(output_path_css.clone(), custom_css_content)
-                    .with_context(|| format!("Failed to write file `{}`",
-                            output_path_css.display()))?;
+        if let Some(fname) = css_path.file_name() {
+            let output_path_css = styles_dir.join(fname);
+            fs::write(output_path_css.clone(), custom_css_content)
+                .with_context(|| format!("Failed to write file `{}`",
+                        output_path_css.display()))?;
 
-                if let Some(fname_str) = fname.to_str() {
-                    update_header(&mut v_html_content, fname_str, UpdateHeaderOpt::Css);
-                }
+            if let Some(fname_str) = fname.to_str() {
+                update_header(&mut v_html_content, fname_str, UpdateHeaderOpt::Css);
             }
         }
+    }
 
-        // scripts
-        if *shower {
-            update_header(&mut v_html_content,
-                          SHOWER_FNAME_OUT_JS, UpdateHeaderOpt::Js);
-            update_header(&mut v_html_content,
-                          LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::Js);
-        } else {
-            update_header(&mut v_html_content, LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::Js);
-        };
-
-        let output_path_libcompono = lib_dir.join(LIBCOMPONO_FNAME_OUT);
-        fs::write(output_path_libcompono.clone(), LIBCOMPONO_STR)
-            .with_context(|| format!("Failed to write file `{}`",
-                    output_path_libcompono.display()))?;
-
-        if *shower {
-            let output_path_shower_js = lib_dir.join(SHOWER_FNAME_OUT_JS);
-            fs::write(output_path_shower_js.clone(), SHOWER_STR_JS)
-                .with_context(|| format!("Failed to write file `{}`",
-                        output_path_shower_js.display()))?;
-
-            // body start
-            v_html_content[1] = format!(r#"
-  </head>
-  <body class="shower">
-    {}"#, v_html_content[1].trim());
-
-            // body content
-            v_html_content[2] = format!(r#"{0}
-    {1}"#,  v_html_content[2].trim(), SHOWER_PROGRESS_HTML);
-
-            // body end
-            v_html_content[3] = format!(r#"
-  </body>
-{0}"#, v_html_content[3].trim());
-        } else {
-            // body start
-            v_html_content[1] = format!(r#"
-  </head>
-  <body>    {}"#, v_html_content[1].trim());
-
-            // body content
-            v_html_content[2] = format!(r#"
-    {0}"#, v_html_content[2].trim());
-
-            // body end
-            v_html_content[3] = format!(r#"
-  </body>
-{0}"#, v_html_content[3].trim());
-        }
+    // scripts
+    if *shower {
+        update_header(&mut v_html_content,
+                      SHOWER_FNAME_OUT_JS, UpdateHeaderOpt::Js);
+        update_header(&mut v_html_content,
+                      LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::Js);
+    } else {
+        update_header(&mut v_html_content, LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::Js);
     };
+
+    let output_path_libcompono = lib_dir.join(LIBCOMPONO_FNAME_OUT);
+    fs::write(output_path_libcompono.clone(), LIBCOMPONO_STR)
+        .with_context(|| format!("Failed to write file `{}`",
+                output_path_libcompono.display()))?;
+
+    if *shower {
+        let output_path_shower_js = lib_dir.join(SHOWER_FNAME_OUT_JS);
+        fs::write(output_path_shower_js.clone(), SHOWER_STR_JS)
+            .with_context(|| format!("Failed to write file `{}`",
+                    output_path_shower_js.display()))?;
+
+        // body start
+        v_html_content[1] = format!(r#"
+</head>
+<body class="shower">
+{}"#, v_html_content[1].trim());
+
+        // body content
+        v_html_content[2] = format!(r#"{0}
+{1}"#,  v_html_content[2].trim(), SHOWER_PROGRESS_HTML);
+
+        // body end
+        v_html_content[3] = format!(r#"
+</body>
+{0}"#, v_html_content[3].trim());
+    } else {
+        // body start
+        v_html_content[1] = format!(r#"
+</head>
+<body>    {}"#, v_html_content[1].trim());
+
+        // body content
+        v_html_content[2] = format!(r#"
+{0}"#, v_html_content[2].trim());
+
+        // body end
+        v_html_content[3] = format!(r#"
+</body>
+{0}"#, v_html_content[3].trim());
+    }
 
     let html_content = v_html_content.join("");
 
@@ -713,15 +814,9 @@ from `{}`", css_path.display()))?;
 
 fn publish_presentation(input_dir:&std::path::PathBuf,
                         commit_msg:&str, method:&Method,
-                        ssh_key:&std::path::PathBuf, ssh_passphrase:&str,
+                        ssh_key:&std::path::PathBuf, ssh_pass:&str,
                         remote_endpoint:&str, include:&PublishIncludeOpt)
                        -> Result<(), Box<dyn std::error::Error>> {
-    let repo = match Repository::open(input_dir) {
-        Ok(repo) => repo,
-        Err(e) => panic!("Failed to open git repository: {}", e),
-    };
-
-    //println!("{}", repo.path().display());
 
     //let username:String = user_input("username: ");
     let mut v_files_incl = Vec::<String>::new();
@@ -729,56 +824,20 @@ fn publish_presentation(input_dir:&std::path::PathBuf,
 
     include_files(input_dir, include, &mut v_files_incl,  &mut v_files_excl)?;
 
-    /*let gitignore_file = input_dir.join(".gitignore");*/
-    /*let gitignore_content = if gitignore_file.exists() {*/
-        /*std::fs::read_to_string(&gitignore_file)*/
-            /*.with_context(|| format!("Failed to read .gitignore file"))?*/
-    /*} else {*/
-        /*"".to_string()*/
-    /*};*/
-
-    git_add(&repo, &mut v_files_incl)?;
-    let (commit, three_id) = git_commit(&repo, &commit_msg);
-
-    let mut cb = RemoteCallbacks::new();
-    let mut push_opts = PushOptions::new();
-
-    let head = repo.head().unwrap();
-    let refspecs: &[&str] = &[head.name().unwrap()];
-
-    // https://github.com/rust-lang/git2-rs/issues/823
-    if ssh_key.to_str().unwrap() == DEFAULT_SSH_KEY_PATH_STR {
-        cb.credentials(|_url, username_from_url, _allowed_types| {
-            Cred::ssh_key(
-                username_from_url.unwrap(),
-                None,
-                Path::new(&format!("{0}/{1}", env::var("HOME").unwrap(),
-                                   DEFAULT_SSH_KEY_HOME)),
-                Some(ssh_passphrase),
-            )
-        });
-    } else {
-        cb.credentials(|_url, username_from_url, _allowed_types| {
-            Cred::ssh_key(
-                username_from_url.unwrap(),
-                None,
-                ssh_key,
-                Some(ssh_passphrase),
-            )
-        });
+    let pub_method = match method {
+        Method::Auto => { "git-auto" }
+        Method::Github => { "github" }
+        Method::Gitlab => { "gitlab" }
+        Method::Scp => { "scp" }
     };
 
-    push_opts.remote_callbacks(cb);
+    if pub_method == "git-auto" ||
+       pub_method == "github" ||
+       pub_method == "gitlab" {
+        publish_to_git(input_dir, commit_msg, pub_method, ssh_key, ssh_pass,
+                       &mut v_files_incl, &mut v_files_excl)?;
+    }
 
-    //let pushOption: Option<&mut PushOptions<'_>> = Some(pushOpts);
-    let mut remote:Remote = t!(repo.find_remote("origin"));
-
-    // push
-    println!("Pushing to remote...");
-    remote.push(refspecs, Some(&mut push_opts))
-        .with_context(|| format!("Failed to push to remote repo. \
-Make sure to provide proper SSH credentials by using options \
-`--ssh-key` and/or `--ssh-passphrase`{}", ""))?;
     Ok(())
 }
 
@@ -794,7 +853,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd
     match &cli.command {
-        Commands::Create { template, template_path, inline,
+        Commands::Create { template, template_path,
                            css, css_path, no_inline_fonts,
                            output_dir, output_filename, shower } => {
             create_presentation(&template,
@@ -804,17 +863,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 output_dir,
                                 output_filename,
                                 shower,
-                                no_inline_fonts,
-                                inline)?;
+                                no_inline_fonts)?;
         }
         Commands::Publish { input_dir, commit_msg, method,
-                            ssh_key, ssh_passphrase, remote_endpoint,
+                            ssh_key, ssh_pass, remote_endpoint,
                             include } => {
             publish_presentation(input_dir,
                                  &commit_msg,
                                  &method,
                                  &ssh_key,
-                                 ssh_passphrase,
+                                 ssh_pass,
                                  remote_endpoint,
                                  &include)?;
         }

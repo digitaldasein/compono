@@ -1,8 +1,0 @@
-# compono CI/CD
-pages:
-  script:
-    - mv * public/
-  stage: publish
-  artifacts:
-    paths:
-      - public
