@@ -4,8 +4,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#![allow(unused_variables)]
-
 // TODO:
 // - add templates
 // - write tests
@@ -20,7 +18,7 @@ use std::iter::Iterator;
 use std::net::TcpStream;
 use clap::{Parser, ArgEnum, Subcommand};
 use anyhow::{Context, Result};
-use git2::{Repository, Oid, Remote, PushOptions, RemoteCallbacks, Cred};
+use git2::{Repository, Remote, PushOptions, RemoteCallbacks, Cred};
 use walkdir::{WalkDir};
 use glob::glob;
 use ssh2::{Session};
@@ -430,7 +428,9 @@ fn git_add(repo:&Repository, v_files: & mut Vec::<String>)
 }
 
 
-fn git_commit(repo: &Repository, msg:&str) -> (Oid, Oid) {
+//fn git_commit(repo: &Repository, msg:&str) -> (Oid, Oid) {
+fn git_commit(repo: &Repository, msg:&str) -> Result<(), git2::Error> {
+
     let mut index = t!(repo.index());
 
     let tree_id = t!(index.write_tree());
@@ -441,7 +441,7 @@ fn git_commit(repo: &Repository, msg:&str) -> (Oid, Oid) {
 
     let head_id = match repo.refname_to_id("HEAD") {
         Ok(oid) => oid,
-        Err(error) => panic!("Failed to get HEAD id\n
+        Err(error) => panic!("Failed to get HEAD id, with error `{}`\n
 ======== HINTS ========
 1. Make sure the remote branch is added, e.g., git remote add origin <remote>
 2. Make sure to set your git upstream branch, e.g., to `main`.
@@ -457,15 +457,16 @@ remote first (using your own fetch strategy), e.g.:
 
     git pull origin main
 
-======================"),
+======================", error),
     };
 
     //let head_id = t!(repo.refname_to_id("HEAD"));
     let parent = t!(repo.find_commit(head_id));
     //let msg = "Publish HTML presentation".to_string();
-    let commit = t!(repo.commit(Some("HEAD"), &sig, &sig, &msg, &tree, &[&parent]));
+    t!(repo.commit(Some("HEAD"), &sig, &sig, &msg, &tree, &[&parent]));
 
-    (commit, tree_id)
+    //(commit, tree_id)
+    Ok(())
 }
 
 fn user_input(question:&str) -> String {
@@ -685,7 +686,8 @@ fn publish_to_git(input_dir:&std::path::PathBuf,
     }
 
     git_add(&repo, v_files_incl)?;
-    let (commit, three_id) = git_commit(&repo, &commit_msg);
+    //let (commit, three_id) = git_commit(&repo, &commit_msg);
+    git_commit(&repo, &commit_msg)?;
 
     let mut cb = RemoteCallbacks::new();
     let mut push_opts = PushOptions::new();
@@ -770,7 +772,6 @@ fn scp_upload_files(remote_endpoint:&Option<String>,
     }
 
     // create zip
-    let prefix = input_dir.to_str().unwrap();
     let odir_basename_str = if output_dir == SCP_REMOTE_DIR {
         let parent_dir = fs::canonicalize(input_dir).unwrap();
         parent_dir.file_name().unwrap().to_str().unwrap().to_string()
@@ -784,24 +785,19 @@ fn scp_upload_files(remote_endpoint:&Option<String>,
         Path::new(output_dir).to_str().unwrap().to_string()
     };
 
-    //let zip_o_str = format!("{}.zip", odir_basename_str);
     let tar_o_str = format!("{}.tar.gz", &odir_basename_str);
-
-    //let zip_o = Path::new(&zip_o_str);
-    //let zip_o_file = fs::File::create(&zip_o).unwrap();
-    let tar_o = Path::new(&tar_o_str);
-    let tar_o_fullpath = Path::new(&odir_str).join(&tar_o_str);
-    let tar_o_file = fs::File::create(&tar_o).unwrap();
+    let tar_o_path = Path::new(&tar_o_str);
+    let tar_o_file = fs::File::create(&tar_o_path).unwrap();
 
     //zip_files(v_files_incl, prefix, zip_o_file, ZIP_METHOD_DEFLATED)?;
     tar_files(v_files_incl, tar_o_file)?;
 
     // Write the file
     //let result = fs::read(zip_o).unwrap();
-    let result = fs::read(tar_o).unwrap();
+    let result = fs::read(tar_o_path).unwrap();
     //let mut remote_file = sess.scp_send(Path::new(&zip_o_str),
     //println!("{:?}", tar_o_fullpath);
-    let mut remote_file = sess.scp_send(&tar_o,
+    let mut remote_file = sess.scp_send(&tar_o_path,
         0o644, result.len() as u64, None)
         .expect("Failed to create file at remote endpoint. Make sure \
 location exists");
@@ -836,7 +832,7 @@ as non-root user)",
             channel.exit_status().unwrap());
     }
 
-    fs::remove_file(tar_o)?;
+    fs::remove_file(tar_o_path)?;
 
     Ok(())
 }
@@ -1071,18 +1067,18 @@ fn publish_presentation(input_dir:&std::path::PathBuf,
     };
     let ssh_key_path = Path::new(&ssh_key_str);
 
-    let pub_method = match method {
+    match method {
         PubMethod::Auto => {
             if output_dir != SCP_REMOTE_DIR
                 || username.is_some()
                 || remote_endpoint.is_some()
             {
                 scp_upload_files(remote_endpoint, username, output_dir,
-                    ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?
+                    ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?;
             } else
             {
                 publish_to_git(input_dir, commit_msg, method,
-                        ssh_key_path, ssh_pass, &mut v_files_incl)?
+                        ssh_key_path, ssh_pass, &mut v_files_incl)?;
             }
         },
         PubMethod::Github => publish_to_git(input_dir, commit_msg, method,
