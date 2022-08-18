@@ -61,7 +61,7 @@ OPTIONS:
             Output directory path [default: ./]
 
     -s, --shower
-            Include shower's presentation javascript core
+            Include shower presentation javascript core
 
     -t, --template <TEMPLATE>
             Use HTML template for presentation. For a custom template path, see
