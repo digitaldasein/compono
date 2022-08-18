@@ -15,6 +15,8 @@ components](https://developer.mozilla.org/en-US/docs/Web/Web), included via the
 [`libcompono` 
 library](https://gitlab.com/digital-dasein/software/html-presentations/libcompono).
 
+![](compono.gif)
+
 ## Features
 
 - Batteries included: a **single (*static*) binary** (~4MB)
