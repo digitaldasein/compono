@@ -93,7 +93,8 @@ const ZIP_METHOD_DEFLATED:zip::CompressionMethod = zip::CompressionMethod::Defla
 #[clap(author, version,  long_about = None)]
 #[clap(propagate_version = true)]
 #[clap(term_width = 80)]
-/// Utility for making component-based HTML presentations
+/// A batteries-included utility for creating, publishing,
+/// and archiving component-based HTML presentations
 struct Cli {
     #[clap(subcommand)]
     command: Commands
@@ -187,8 +188,8 @@ enum Commands {
         include: IncludeOpt,
     },
 
-    /// Archive and compress presentation (to zip or tar.gz)
-    #[clap(visible_aliases = &["compress"]) ]
+    /// Archive presentation (tar.gz or zip)
+    #[clap(visible_aliases = &["zip, bundle"]) ]
     Archive {
         /// Path to presentation directory
         #[clap(short, long, value_parser, default_value="./")]
@@ -1004,31 +1005,31 @@ from `{}`", css_path.display()))?;
 
         // body start
         v_html_content[1] = format!(r#"
-</head>
-<body class="shower">
-{}"#, v_html_content[1].trim());
+  </head>
+  <body class="shower">
+    {}"#, v_html_content[1].trim());
 
         // body content
         v_html_content[2] = format!(r#"{0}
-{1}"#,  v_html_content[2].trim(), SHOWER_PROGRESS_HTML);
+    {1}"#,  v_html_content[2].trim(), SHOWER_PROGRESS_HTML);
 
         // body end
         v_html_content[3] = format!(r#"
-</body>
+  </body>
 {0}"#, v_html_content[3].trim());
     } else {
         // body start
         v_html_content[1] = format!(r#"
-</head>
-<body>    {}"#, v_html_content[1].trim());
+  </head>
+  <body>    {}"#, v_html_content[1].trim());
 
         // body content
         v_html_content[2] = format!(r#"
-{0}"#, v_html_content[2].trim());
+    {0}"#, v_html_content[2].trim());
 
         // body end
         v_html_content[3] = format!(r#"
-</body>
+  </body>
 {0}"#, v_html_content[3].trim());
     }
 

@@ -77,3 +77,8 @@ Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
 Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
 Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
 License: MIT
+
+# Roboto fonts
+Files: src/styles/fonts/*
+Copyright: 2011 Google Inc. All Rights Reserved.
+License: Apache-2.0
