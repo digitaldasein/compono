@@ -26,13 +26,16 @@ use glob::glob;
 use ssh2::{Session};
 //use zip::result::ZipError;
 use zip::write::FileOptions;
+use flate2::Compression;
+use flate2::write::GzEncoder;
+use rpassword::read_password;
 
 /*---------------------------------------------------------------------
  * Config
  *---------------------------------------------------------------------*/
 
 // default constants
-const OUTPUT_DIR_STR:&str = "./";
+const CREATE_OUTPUT_DIR_STR:&str = "./";
 const DIR_LIB:&str = "./lib";
 const DIR_STYLES:&str = "./styles";
 
@@ -73,7 +76,9 @@ const GITHUB_CI_PATH:&str = ".github/workflows/deploy.yml";
 const GITLAB_CI:&str = include_str!("./ci-configs/gitlab.yml");
 const GITLAB_CI_PATH:&str = ".gitlab-ci.yml";
 
-const SCP_REMOTE_DIR:&str = "/var/www/html";
+const SCP_REMOTE_DIR:&str = "$HOME/<input-dir>";
+const ARCHIVE_OUT_DIR:&str = "./";
+const ARCHIVE_OUT_NAME:&str = "<name-input-dir>";
 
 const ZIP_METHOD_STORED:zip::CompressionMethod = zip::CompressionMethod::Stored;
 const ZIP_METHOD_DEFLATED:zip::CompressionMethod = zip::CompressionMethod::Deflated;
@@ -116,8 +121,8 @@ enum Commands {
         output_filename: Option<std::path::PathBuf>,
 
         /// Output directory path
-        #[clap(short, long, value_parser)]
-        output_dir: Option<std::path::PathBuf>,
+        #[clap(short, long, value_parser, default_value=CREATE_OUTPUT_DIR_STR)]
+        output_dir: std::path::PathBuf,
 
         /// Include default CSS stylesheet.
         /// For a custom css path, see the '--css-path option'.
@@ -161,10 +166,10 @@ enum Commands {
         #[clap(short, long, value_parser)]
         username: Option<String>,
 
-        /// Remote directory (for `scp` method). Note that the `--input-dir` name
-        /// will also be copied.
+        /// Remote output directory (for `scp` method). Is directory does not
+        /// exist, it will automatically be created.
         #[clap(short='o', long, value_parser, default_value=SCP_REMOTE_DIR)]
-        remote_dir: std::path::PathBuf,
+        output_dir: String,
 
         /// Git commit message when pushing to remote
         #[clap(short, long, value_parser,
@@ -177,11 +182,38 @@ enum Commands {
                default_value_t = PubMethod::Auto) ]
         method: PubMethod,
 
-        /// Determine which files to include for publishing. (Note that when
-        /// using index.html to check for files, gitignore is also checked.)
+        /// Determine which files to include for publishing. By default,
+        /// the `src` tags in the index.html are checked.
         #[clap(short='I', long, value_parser, arg_enum,
-               default_value_t = PublishIncludeOpt::UseHtml) ]
-        include: PublishIncludeOpt,
+               default_value_t = IncludeOpt::UseHtml) ]
+        include: IncludeOpt,
+    },
+
+    /// Archive and compress presentation (to zip or tar.gz)
+    #[clap(visible_aliases = &["compress"]) ]
+    Archive {
+        /// Path to presentation directory
+        #[clap(short, long, value_parser, default_value="./")]
+        input_dir: std::path::PathBuf,
+
+        /// Output directory
+        #[clap(short, long, value_parser, default_value=ARCHIVE_OUT_DIR)]
+        output_dir: std::path::PathBuf,
+
+        /// Output filename without extension
+        #[clap(short, long, value_parser, default_value=ARCHIVE_OUT_NAME)]
+        filename: String,
+
+        /// Determine which files to include for publishing. By default,
+        /// the `src` tags in the index.html are checked.
+        #[clap(short='I', long, value_parser, arg_enum,
+               default_value_t = IncludeOpt::UseHtml) ]
+        include: IncludeOpt,
+
+        /// Set archive and compression method (`zip-stored` = not compressed)
+        #[clap(short='m', long, value_parser, arg_enum,
+               default_value_t = ArchiveMethod::Tar) ]
+        method: ArchiveMethod,
     }
 
 }
@@ -209,7 +241,7 @@ enum UpdateHeaderOpt {
 }
 
 #[derive(Clone, ArgEnum, Debug)]
-enum PublishIncludeOpt {
+enum IncludeOpt {
     UseHtml,
     UseGitignore,
     All
@@ -221,6 +253,13 @@ enum PubMethod {
     Github,
     Gitlab,
     Scp
+}
+
+#[derive(Clone, ArgEnum, Debug)]
+enum ArchiveMethod {
+    Tar,
+    Zip,
+    ZipStored,
 }
 
 macro_rules! t {
@@ -258,7 +297,7 @@ where
         // Write file or directory explicitly
         // Some unzip tools unzip files with directory paths correctly, some do not!
         if path.is_file() {
-            println!("adding file {:?} as {:?} ...", path, name);
+            //println!("adding file {:?} as {:?} ...", path, name);
             #[allow(deprecated)]
             zip.start_file_from_path(name, options)?;
             let mut f = fs::File::open(path)?;
@@ -277,6 +316,44 @@ where
     zip.finish()?;
     Result::Ok(())
 }
+
+
+fn tar_files(
+    v_files: & mut Vec::<String>,
+    tarfile: fs::File,
+) -> Result<(), std::io::Error>
+{
+    let enc = GzEncoder::new(tarfile, Compression::default());
+    let mut tar = tar::Builder::new(enc);
+
+    for entry in v_files {
+        let path = Path::new(entry);
+        let mut file = fs::File::open(path).unwrap();
+        tar.append_file(path, &mut file).unwrap();
+    }
+
+    Ok(())
+}
+
+
+fn check_dir_and_create(output_dir:&Path) -> Result<(), std::io::Error> {
+    if !output_dir.exists(){
+        let q_str = format!("The directory `{}` does not exist. \
+Create it? ([n]/y): ", output_dir.display());
+        stdout().flush().unwrap();
+        let answer = user_input(&q_str);
+        io::stdout().flush().unwrap();
+        if answer == "y" || answer == "yes" {
+            fs::create_dir_all(output_dir)?;
+        } else {
+            println!("Nevermind then, bye!");
+            process::exit(1);
+        }
+    }
+
+    Ok(())
+}
+
 
 fn add_font_files(styles_dir:std::path::PathBuf)
              -> Result<(), Box<dyn std::error::Error>> {
@@ -445,7 +522,7 @@ fn in_gitignore(gitignore_path:&Path, entry:&Path)
 
 
 fn include_files(input_dir:&std::path::PathBuf,
-                 method:&PublishIncludeOpt,
+                 method:&IncludeOpt,
                  v_files: & mut Vec::<String>)
                  -> Result<(), Box<dyn std::error::Error>>  {
 
@@ -484,7 +561,7 @@ fn include_files(input_dir:&std::path::PathBuf,
             let in_gitignore:bool = in_gitignore(gitignore_file, entry.path())?;
 
             match method {
-                PublishIncludeOpt::All => {
+                IncludeOpt::All => {
                     if !is_git {
                         v_files.push(entry.path()
                             .to_str()
@@ -493,7 +570,7 @@ fn include_files(input_dir:&std::path::PathBuf,
                     }
                 }
 
-                PublishIncludeOpt::UseGitignore => {
+                IncludeOpt::UseGitignore => {
                     if !is_git && !in_gitignore {
                         v_files.push(entry.path()
                             .to_str()
@@ -502,7 +579,7 @@ fn include_files(input_dir:&std::path::PathBuf,
                     }
                 }
 
-                PublishIncludeOpt::UseHtml => {
+                IncludeOpt::UseHtml => {
                     if !is_git && !in_gitignore  && in_html {
                         v_files.push(entry.path()
                             .to_str()
@@ -650,13 +727,14 @@ Make sure to provide proper SSH credentials by using options \
 
 fn scp_upload_files(remote_endpoint:&Option<String>,
                     username:&Option<String>,
-                    remote_dir:&std::path::PathBuf,
+                    output_dir:&str,
                     ssh_key:&Path,
                     ssh_pass:&str,
                     v_files_incl: & mut Vec::<String>,
                     input_dir:&std::path::PathBuf)
                     -> Result<(), Box<dyn std::error::Error>> {
 
+    println!("Initialising secure copy procedure (scp)...");
 
     // Connect to the local SSH server
     let endpoint_full = if let Some(endpoint) = remote_endpoint {
@@ -684,30 +762,51 @@ fn scp_upload_files(remote_endpoint:&Option<String>,
             println!("SSH authentication failed for remote endpoint {}",
                 endpoint_full);
             println!("Reason: {}", e);
-            let pw = user_input("Try with password: ");
+            print!("Try with password: ");
+            stdout().flush().unwrap();
+            let pw = read_password().unwrap();
             sess.userauth_password(&uname, &pw).unwrap()
         },
     }
 
     // create zip
     let prefix = input_dir.to_str().unwrap();
+    let odir_basename_str = if output_dir == SCP_REMOTE_DIR {
+        let parent_dir = fs::canonicalize(input_dir).unwrap();
+        parent_dir.file_name().unwrap().to_str().unwrap().to_string()
+    } else {
+        Path::new(output_dir).file_name().unwrap().to_str().unwrap().to_string()
+    };
 
-    let parent_dir = fs::canonicalize(input_dir).unwrap();
-    let zip_o_dir_str = parent_dir.file_name().unwrap().to_str().unwrap().to_string();
-    let zip_o_str = format!("{}.zip", zip_o_dir_str);
+    let odir_str = if output_dir == SCP_REMOTE_DIR {
+        Path::new("./").join(&odir_basename_str).to_str().unwrap().to_string()
+    } else {
+        Path::new(output_dir).to_str().unwrap().to_string()
+    };
 
-    let zip_o = Path::new(&zip_o_str);
-    let zip_o_file = fs::File::create(&zip_o).unwrap();
+    //let zip_o_str = format!("{}.zip", odir_basename_str);
+    let tar_o_str = format!("{}.tar.gz", &odir_basename_str);
 
-    zip_files(v_files_incl, prefix, zip_o_file, ZIP_METHOD_DEFLATED)?;
+    //let zip_o = Path::new(&zip_o_str);
+    //let zip_o_file = fs::File::create(&zip_o).unwrap();
+    let tar_o = Path::new(&tar_o_str);
+    let tar_o_fullpath = Path::new(&odir_str).join(&tar_o_str);
+    let tar_o_file = fs::File::create(&tar_o).unwrap();
+
+    //zip_files(v_files_incl, prefix, zip_o_file, ZIP_METHOD_DEFLATED)?;
+    tar_files(v_files_incl, tar_o_file)?;
 
     // Write the file
-    let result = fs::read(zip_o).unwrap();
-    let mut remote_file = sess.scp_send(Path::new(&zip_o_str),
-        0o644, result.len() as u64, None).unwrap();
+    //let result = fs::read(zip_o).unwrap();
+    let result = fs::read(tar_o).unwrap();
+    //let mut remote_file = sess.scp_send(Path::new(&zip_o_str),
+    //println!("{:?}", tar_o_fullpath);
+    let mut remote_file = sess.scp_send(&tar_o,
+        0o644, result.len() as u64, None)
+        .expect("Failed to create file at remote endpoint. Make sure \
+location exists");
     remote_file.write_all(&result)
-        .expect("Failed to write file to remote server \
-(make sure the remote directory exists)");
+        .expect("Failed to write file to remote server");
 
     // Close the channel and wait for the whole content to be tranferred
     remote_file.send_eof().unwrap();
@@ -717,16 +816,27 @@ fn scp_upload_files(remote_endpoint:&Option<String>,
 
     // currently only for servers that support unzip (no OS checks)
     let mut channel = sess.channel_session().unwrap();
-    let cmd = format!("mkdir -p {0} && unzip -o -d {0} {1}",
-        zip_o_dir_str,
-        zip_o_str);
-    channel.exec(&cmd).unwrap();
+    let cmd_1 = format!("mkdir -p {0} && tar -xvf {1} -C {0} && rm -f {1}",
+        odir_str,
+        //tar_o_fullpath.to_str().unwrap(),
+        tar_o_str);
+    channel.exec(&cmd_1).unwrap();
     let mut s = String::new();
     channel.read_to_string(&mut s).unwrap();
-    println!("{}", s);
-    //channel.send_eof()?;
-    //channel.wait_eof()?;
+    //println!("{}", s);
     channel.wait_close()?;
+    if channel.exit_status().unwrap() == 0 {
+        println!("Successfully copied presentation to remote server!
+Your slides are available at remote location `{}`", odir_str);
+    } else {
+        println!("[ERROR] Command failed with exit status {0}
+TIP: check permissions (\
+e.g. you cannot perform operations on root-owned files when connected \
+as non-root user)",
+            channel.exit_status().unwrap());
+    }
+
+    fs::remove_file(tar_o)?;
 
     Ok(())
 }
@@ -739,7 +849,7 @@ fn create_presentation(template:&Template,
                        template_path:&Option<std::path::PathBuf>,
                        css:&Stylesheet,
                        css_path:&Option<std::path::PathBuf>,
-                       output_dir:&Option<std::path::PathBuf>,
+                       output_dir:&std::path::PathBuf,
                        output_filename:&Option<std::path::PathBuf>,
                        shower:&bool,
                        no_inline_fonts:&bool)
@@ -755,26 +865,7 @@ fn create_presentation(template:&Template,
     };
 
     // set output directory
-    let output_dir = if let Some(odir) = output_dir {
-        if !Path::new(odir).exists(){
-            println!("The directory `{}` does not exist", odir.display());
-            print!("Create it? [n]/y: ");
-            io::stdout().flush().unwrap();
-            let mut answer = String::new();
-            io::stdin().read_line(&mut answer)
-                .expect("Error getting user input");
-            if answer == "y\n" || answer == "yes\n" {
-                fs::create_dir_all(odir)?;
-            } else {
-                println!("That's it then. Bye!");
-                process::exit(1);
-            }
-        }
-        //Path::new(odir).join(output_file)
-        Path::new(odir)
-    } else {
-        Path::new(OUTPUT_DIR_STR)
-    };
+    check_dir_and_create(output_dir)?;
 
     let output_path_html = output_dir.join(output_file);
     // check if file already exists
@@ -963,8 +1054,8 @@ fn publish_presentation(input_dir:&std::path::PathBuf,
                         ssh_key:&std::path::PathBuf, ssh_pass:&str,
                         remote_endpoint:&Option<String>,
                         username:&Option<String>,
-                        remote_dir:&std::path::PathBuf,
-                        include:&PublishIncludeOpt)
+                        output_dir:&str,
+                        include:&IncludeOpt)
                        -> Result<(), Box<dyn std::error::Error>> {
 
     //let username:String = user_input("username: ");
@@ -981,15 +1072,81 @@ fn publish_presentation(input_dir:&std::path::PathBuf,
     let ssh_key_path = Path::new(&ssh_key_str);
 
     let pub_method = match method {
-        PubMethod::Auto => publish_to_git(input_dir, commit_msg, method,
-            ssh_key_path, ssh_pass, &mut v_files_incl)?,
+        PubMethod::Auto => {
+            if output_dir != SCP_REMOTE_DIR
+                || username.is_some()
+                || remote_endpoint.is_some()
+            {
+                scp_upload_files(remote_endpoint, username, output_dir,
+                    ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?
+            } else
+            {
+                publish_to_git(input_dir, commit_msg, method,
+                        ssh_key_path, ssh_pass, &mut v_files_incl)?
+            }
+        },
         PubMethod::Github => publish_to_git(input_dir, commit_msg, method,
             ssh_key_path, ssh_pass, &mut v_files_incl)?,
         PubMethod::Gitlab => publish_to_git(input_dir, commit_msg, method,
             ssh_key_path, ssh_pass, &mut v_files_incl)?,
-        PubMethod::Scp => scp_upload_files(remote_endpoint, username, remote_dir,
+        PubMethod::Scp => scp_upload_files(remote_endpoint, username, output_dir,
             ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?
     };
+
+    Ok(())
+}
+
+
+fn archive_presentation(input_dir:&std::path::PathBuf,
+                        output_dir:&std::path::PathBuf,
+                        filename:&str,
+                        method:&ArchiveMethod,
+                        include:&IncludeOpt)
+                       -> Result<(), Box<dyn std::error::Error>> {
+
+    //let username:String = user_input("username: ");
+    let mut v_files_incl = Vec::<String>::new();
+
+    include_files(input_dir, include, &mut v_files_incl)?;
+
+    // create zip
+    let archive_fname = if filename == ARCHIVE_OUT_NAME {
+        let parent_dir = fs::canonicalize(input_dir).unwrap();
+        parent_dir.file_name().unwrap().to_str().unwrap().to_string()
+    } else {
+        filename.to_string()
+    };
+
+    check_dir_and_create(output_dir)?;
+
+    // resolve ssh
+    let output_path_full = match method {
+        ArchiveMethod::Tar => {
+            let o_str = format!("{}.tar.gz", archive_fname);
+            let o_path = output_dir.join(o_str);
+            let o_file = fs::File::create(&o_path).unwrap();
+            tar_files(&mut v_files_incl, o_file)?;
+            o_path
+        },
+        ArchiveMethod::Zip => {
+            let prefix = input_dir.to_str().unwrap();
+            let o_str = format!("{}.zip", archive_fname);
+            let o_path = output_dir.join(o_str);
+            let o_file = fs::File::create(&o_path).unwrap();
+            zip_files(&mut v_files_incl, prefix, o_file, ZIP_METHOD_DEFLATED)?;
+            o_path
+        },
+        ArchiveMethod::ZipStored => {
+            let prefix = input_dir.to_str().unwrap();
+            let o_str = format!("{}.zip", archive_fname);
+            let o_path = output_dir.join(o_str);
+            let o_file = fs::File::create(&o_path).unwrap();
+            zip_files(&mut v_files_incl, prefix, o_file, ZIP_METHOD_STORED)?;
+            o_path
+        }
+    };
+
+    println!("Successfully created `{}`", output_path_full.display());
 
     Ok(())
 }
@@ -1019,7 +1176,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 no_inline_fonts)?;
         }
         Commands::Publish { input_dir, commit_msg, method,
-                            ssh_key, ssh_pass, endpoint, username, remote_dir,
+                            ssh_key, ssh_pass, endpoint, username, output_dir,
                             include } => {
             publish_presentation(input_dir,
                                  &commit_msg,
@@ -1028,7 +1185,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                  ssh_pass,
                                  endpoint,
                                  username,
-                                 &remote_dir,
+                                 &output_dir,
+                                 &include)?;
+        }
+
+        Commands::Archive { input_dir, output_dir, filename, method,
+                            include } => {
+            archive_presentation(input_dir,
+                                 output_dir,
+                                 &filename,
+                                 &method,
                                  &include)?;
         }
     }
