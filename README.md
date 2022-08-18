@@ -170,7 +170,11 @@ components](https://gitlab.com/digital-dasein/software/html-presentations/libcom
 - [dd-slide](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide/docs/classes/DdSlide.html)
 - [dd-slide-collection](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide-collection/docs/classes/DdSlideCollection.html)
 
+TODO: `dd-code` component
+
 ## Examples
+
+TODO
 
 ## Development
 
@@ -194,6 +198,19 @@ cd lib/libcompono \
 
 ```sh
 cd lib/libcompono && yarn build:shower
+```
+
+### Compono crate (Rust)
+
+Run program:
+```
+cargo run -- <subcommand> [OPTIONS]
+```
+
+Build release:
+
+```sh
+cargo build --release
 ```
 
 ## Attribution
