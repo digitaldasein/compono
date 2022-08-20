@@ -6,9 +6,10 @@ SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
 SPDX-License-Identifier: MIT
 -->
 
-[features](#features) &nbsp;&ndash;&nbsp; [docs](#docs) &nbsp;&ndash;&nbsp; 
-[examples](#examples) &nbsp;&ndash;&nbsp; [development](#development) 
-&nbsp;&ndash;&nbsp; [attribution](#attribution)
+[quick start](#quick-start) &nbsp;&ndash;&nbsp; [features](#features) 
+&nbsp;&ndash;&nbsp; [docs](#docs) &nbsp;&ndash;&nbsp; [examples](#examples) 
+&nbsp;&ndash;&nbsp; [development](#development) &nbsp;&ndash;&nbsp; 
+[attribution](#attribution)
 
 # Compono
 
@@ -18,6 +19,15 @@ content by exploiting a set of native [web
 components](https://developer.mozilla.org/en-US/docs/Web/Web), included via the 
 [`libcompono` 
 library](https://gitlab.com/digital-dasein/software/html-presentations/libcompono).
+
+
+## Quick start
+
+Initialise new presentation:
+
+```
+compono create [OPTIONS]
+```
 
 ## Features
 
