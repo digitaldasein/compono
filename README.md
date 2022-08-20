@@ -23,7 +23,11 @@ library](https://gitlab.com/digital-dasein/software/html-presentations/libcompon
 
 ## Quick start
 
-Initialise new presentation:
+Download the [latest 
+release](https://github.com/digitaldasein/compono/releases/) and move the 
+binary somewhere convenient (e.g. `/usr/local/bin/`).
+
+Initialise presentation:
 
 ```
 compono create [OPTIONS]
@@ -365,10 +369,10 @@ Run program:
 cargo run -- <subcommand> [OPTIONS]
 ```
 
-Build release:
+Build:
 
 ```sh
-cargo build --release
+cargo build
 ```
 
 ## Attribution
