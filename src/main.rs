@@ -14,6 +14,7 @@ use std::fs;
 use std::env;
 use std::process;
 use std::iter::Iterator;
+use chrono::Datelike;
 
 use std::net::TcpStream;
 use clap::{Parser, ArgEnum, Subcommand};
@@ -76,7 +77,7 @@ const GITLAB_CI_PATH:&str = ".gitlab-ci.yml";
 
 const SCP_REMOTE_DIR:&str = "$HOME/<input-dir>";
 const ARCHIVE_OUT_DIR:&str = "./";
-const ARCHIVE_OUT_NAME:&str = "<name-input-dir>";
+const ARCHIVE_OUT_NAME:&str = "present-<date>";
 
 const ZIP_METHOD_STORED:zip::CompressionMethod = zip::CompressionMethod::Stored;
 const ZIP_METHOD_DEFLATED:zip::CompressionMethod = zip::CompressionMethod::Deflated;
@@ -106,38 +107,39 @@ enum Commands {
     #[clap(visible_aliases = &["init", "new"]) ]
     Create {
         /// Use HTML template for presentation.
-        /// For a custom template path, see the '--template-path option'.
+        /// For a custom template path, see the `--template-path` option.
         #[clap(short, long, value_parser, arg_enum,
                default_value_t = Template::Minimal) ]
         template: Template,
 
         /// Path to custom HTML template.
-        #[clap(short='T', long, value_parser)]
+        #[clap(short='p', long, value_parser)]
         template_path: Option<std::path::PathBuf>,
 
         /// filename HTML output
-        #[clap(short='f', long, value_parser)]
-        output_filename: Option<std::path::PathBuf>,
+        #[clap(short, long, value_parser)]
+        filename: Option<std::path::PathBuf>,
 
         /// Output directory path
         #[clap(short, long, value_parser, default_value=CREATE_OUTPUT_DIR_STR)]
         output_dir: std::path::PathBuf,
 
-        /// Include default CSS stylesheet.
-        /// For a custom css path, see the '--css-path option'.
-        #[clap(short, long, value_parser, arg_enum,
-               default_value_t = Stylesheet::None) ]
-        css: Stylesheet,
+        /// Theme (CSS styles).
+        /// For a custom css path, see the `--css-path` option.
+        #[clap(short='T', long, value_parser, arg_enum,
+               default_value_t = Stylesheet::None)
+        ]
+        theme: Stylesheet,
 
         /// Path to custom CSS stylesheet.
-        #[clap(short='C', long, value_parser)]
+        #[clap(short='c', long, value_parser)]
         css_path: Option<std::path::PathBuf>,
 
-        /// Include shower's presentation javascript core
+        /// Include shower presentation javascript core
         #[clap(short, long, action)]
         shower: bool,
 
-        /// Do not inline font binaries in CSS (include separate WOFF files)
+        /// Do not inline font binaries in CSS (applicable to most themes)
         #[clap(short, long, action)]
         no_inline_fonts: bool,
     },
@@ -173,10 +175,9 @@ enum Commands {
         /// Git commit message when pushing to remote
         #[clap(short, long, value_parser,
                default_value="Publish HTML presentation")]
-        commit_msg: String,
+        commit: String,
 
-        /// Publication method (for the default `auto` option, the preferred method is
-        /// guessed)
+        /// Publication method
         #[clap(short, long, value_parser, arg_enum,
                default_value_t = PubMethod::Auto) ]
         method: PubMethod,
@@ -221,7 +222,7 @@ enum Commands {
 enum Template {
     Minimal,
     MinimalVim,
-    StyleOps,
+    StyleProps,
     Full,
 }
 
@@ -641,17 +642,16 @@ fn encode_pages_url_from_ssh(cfg_remote_url:String) -> String {
 }
 
 fn publish_to_git(input_dir:&std::path::PathBuf,
-                  commit_msg:&str,
+                  commit:&str,
                   method:&PubMethod,
                   ssh_key:&Path,
                   ssh_pass:&str,
                   v_files_incl: & mut Vec::<String>)
                   -> Result<(), Box<dyn std::error::Error>> {
 
-    let repo = match Repository::open(input_dir) {
-        Ok(repo) => repo,
-        Err(e) => panic!("Failed to open git repository: {}", e),
-    };
+    let repo = Repository::open(input_dir)
+        .with_context(|| format!("Failed to open Git repository. Make sure your \
+project in under git control (with a remote oriign)"))?;
 
     let cfg = repo.config()?;
     let cfg_remote_url:String = if let Ok(url) = cfg.get_entry("remote.origin.url"){
@@ -664,7 +664,11 @@ fn publish_to_git(input_dir:&std::path::PathBuf,
         PubMethod::Auto => {
             if cfg_remote_url.contains("github"){ "github" }
             else if cfg_remote_url.contains("gitlab") { "gitlab" }
-            else { panic!("Failed to auto-detect git platform from remote URL") }
+            else {
+                println!("[ERROR] Failed to auto-detect git platform from remote URL");
+                println!("[ERROR] Make sure your remote origin is set");
+                process::exit(1);
+            }
         },
         PubMethod::Gitlab => { "gitlab" },
         PubMethod::Github => { "github" },
@@ -687,8 +691,8 @@ fn publish_to_git(input_dir:&std::path::PathBuf,
     }
 
     git_add(&repo, v_files_incl)?;
-    //let (commit, three_id) = git_commit(&repo, &commit_msg);
-    git_commit(&repo, &commit_msg)?;
+    //let (commit, three_id) = git_commit(&repo, &commit);
+    git_commit(&repo, &commit)?;
 
     let mut cb = RemoteCallbacks::new();
     let mut push_opts = PushOptions::new();
@@ -844,16 +848,16 @@ as non-root user)",
 
 fn create_presentation(template:&Template,
                        template_path:&Option<std::path::PathBuf>,
-                       css:&Stylesheet,
+                       theme:&Stylesheet,
                        css_path:&Option<std::path::PathBuf>,
                        output_dir:&std::path::PathBuf,
-                       output_filename:&Option<std::path::PathBuf>,
+                       filename:&Option<std::path::PathBuf>,
                        shower:&bool,
                        no_inline_fonts:&bool)
                        -> Result<(), Box<dyn std::error::Error>> {
 
     // set output filename
-    let output_file = if let Some(ofile) = output_filename {
+    let output_file = if let Some(ofile) = filename {
         // avoid output filename reference to be shared
         let outputfile = ofile.clone();
         outputfile.into_os_string().into_string().unwrap()
@@ -888,7 +892,7 @@ from `{}`", tpath.display()))?
         match template {
             Template::Minimal => { HTML_MINIMAL }
             Template::MinimalVim => { HTML_MINIMAL_VIM }
-            Template::StyleOps => { HTML_MINIMAL_VIM }
+            Template::StyleProps => { HTML_MINIMAL_VIM }
             Template::Full => { HTML_MINIMAL_VIM }
         }.to_string()
     };
@@ -907,8 +911,8 @@ from `{}`", tpath.display()))?
 
     // stylesheets
     // roboto font
-    if *shower || matches!(css, Stylesheet::DdBasic)
-               || matches!(css, Stylesheet::ShowerDdBasic) {
+    if *shower || matches!(theme, Stylesheet::DdBasic)
+               || matches!(theme, Stylesheet::ShowerDdBasic) {
 
         if *no_inline_fonts {
             add_font_files(styles_dir.clone())?;
@@ -941,7 +945,7 @@ from `{}`", tpath.display()))?
     }
 
     // include stylesheet
-    match css {
+    match theme {
         Stylesheet::None => { () }
         Stylesheet::DdBasic => {
             let fname = "dd_basic.css";
@@ -1047,7 +1051,7 @@ from `{}`", css_path.display()))?;
 }
 
 fn publish_presentation(input_dir:&std::path::PathBuf,
-                        commit_msg:&str, method:&PubMethod,
+                        commit:&str, method:&PubMethod,
                         ssh_key:&std::path::PathBuf, ssh_pass:&str,
                         remote_endpoint:&Option<String>,
                         username:&Option<String>,
@@ -1078,13 +1082,13 @@ fn publish_presentation(input_dir:&std::path::PathBuf,
                     ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?;
             } else
             {
-                publish_to_git(input_dir, commit_msg, method,
+                publish_to_git(input_dir, commit, method,
                         ssh_key_path, ssh_pass, &mut v_files_incl)?;
             }
         },
-        PubMethod::Github => publish_to_git(input_dir, commit_msg, method,
+        PubMethod::Github => publish_to_git(input_dir, commit, method,
             ssh_key_path, ssh_pass, &mut v_files_incl)?,
-        PubMethod::Gitlab => publish_to_git(input_dir, commit_msg, method,
+        PubMethod::Gitlab => publish_to_git(input_dir, commit, method,
             ssh_key_path, ssh_pass, &mut v_files_incl)?,
         PubMethod::Scp => scp_upload_files(remote_endpoint, username, output_dir,
             ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?
@@ -1108,8 +1112,14 @@ fn archive_presentation(input_dir:&std::path::PathBuf,
 
     // create zip
     let archive_fname = if filename == ARCHIVE_OUT_NAME {
-        let parent_dir = fs::canonicalize(input_dir).unwrap();
-        parent_dir.file_name().unwrap().to_str().unwrap().to_string()
+        let now = chrono::offset::Local::now();
+        //let parent_dir = fs::canonicalize(input_dir).unwrap();
+        //parent_dir.file_name().unwrap().to_str().unwrap().to_string()
+        //    println!("{:?}", chrono::offset::Local::now());
+        format!("present-{}-{:02}-{:02}",
+            now.year(),
+            now.month(),
+            now.day())
     } else {
         filename.to_string()
     };
@@ -1161,22 +1171,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // matches just as you would the top level cmd
     match &cli.command {
         Commands::Create { template, template_path,
-                           css, css_path, no_inline_fonts,
-                           output_dir, output_filename, shower } => {
+                           theme, css_path, no_inline_fonts,
+                           output_dir, filename, shower } => {
             create_presentation(&template,
                                 template_path,
-                                &css,
+                                &theme,
                                 css_path,
                                 output_dir,
-                                output_filename,
+                                filename,
                                 shower,
                                 no_inline_fonts)?;
         }
-        Commands::Publish { input_dir, commit_msg, method,
+        Commands::Publish { input_dir, commit, method,
                             ssh_key, ssh_pass, endpoint, username, output_dir,
                             include } => {
             publish_presentation(input_dir,
-                                 &commit_msg,
+                                 &commit,
                                  &method,
                                  &ssh_key,
                                  ssh_pass,

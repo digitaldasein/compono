@@ -1,6 +1,6 @@
 [package]
 name = "compono"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 description = "A CLI utility for making component-based HTML presentations"
 
@@ -24,6 +24,7 @@ zip = "0.6.2"
 flate2 = "1.0.24"
 tar = "0.4.38"
 rpassword = "7.0"
+chrono = "0.4.22"
 
 # optimize for binary size rather than speed and debugging
 # <https://stackoverflow.com/a/54842093>
