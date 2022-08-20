@@ -275,7 +275,52 @@ stylesheet:
   ```
   &rarr; outputs `./my-pressie.zip`
 
-## Simple presentation example
+## Minimal presentation example
+
+```html
+<html>
+  [...]
+  <body>
+    <dd-slide-collection main-title="My presentation title"
+                         sub-title="Which might also have a subtitle"
+                         author="Senne Van Baelen"
+                         organisation="Digital Dasein"
+                         organisation-url=""
+                         date="2022-08-18"
+                         url="mysite.org"
+                         img-src="logo.svg"
+                         img-url="">
+
+      <!--use default footer and titlepagee-->
+      <dd-footer></dd-footer>
+      <dd-titlepage></dd-titlepage>
+
+      <dd-slide>
+        <h2>My first slide</h2>
+        <ul>
+          <li>Some important item</li>
+          <li>Another important item</li>
+        </ul>
+      </dd-slide>
+
+      <dd-slide dim="70 30; 50 50" slot-style="border: 1px solid black;">
+        <h2>My second slide is a 2 x 2 grid</h2>
+        <div slot="1">
+          This slot is a 70% width column
+          <h4>Nest whatever you want here.</h4>
+        </div>
+        <div slot="2">This is the second slot, only 30% width</div>
+        <div slot="3">
+          And now for slot 3 (second row) at <b>50% width</b>
+          <br><img height="150px" src="logo.svg" alt="">
+        </div>
+        <!-- NO slot 4, so an auto-filler is rendered-->
+      </dd-slide>
+
+    </dd-slide-collection>
+  </body>
+</html>
+```
 
 ![](compono.gif)
 
