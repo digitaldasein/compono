@@ -1,6 +1,6 @@
 # Examples
 
-Published examples:
+## Published examples:
 - [example-dd-basic](https://digitaldasein.github.io/compono/example-dd-basic/)
 
 ## Building examples
