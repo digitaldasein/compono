@@ -26,7 +26,7 @@ library](https://gitlab.com/digital-dasein/software/html-presentations/libcompon
 ## Quick start
 
 <b>Download</b> the [latest 
-release](https://github.com/digitaldasein/compono/releases/) and move the 
+release](https://github.com/digitaldasein/compono/releases/latest) and move the 
 binary to a convenient location on your system (e.g.  `/usr/local/bin/`).
 
 Initialise <b>new, empty presentation</b>:
