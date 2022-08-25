@@ -47,7 +47,7 @@ compono create --theme dd-basic --template example --shower --mathjax
 (<i>short version</i>: `compono create -t dd-basic -T example -s -m`)
 
 The output of this command is [available 
-here](https://digitaldasein.github.io/com0pono/example-dd-basic/).
+here](https://digitaldasein.github.io/compono/example-dd-basic/).
 
 ## Features
 
