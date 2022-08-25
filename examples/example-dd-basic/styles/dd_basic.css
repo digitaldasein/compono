@@ -1,0 +1,223 @@
+/*
+ * SPDX-FileCopyrightText: 2022 Digital Dasein <https://digital-dasein.gitlab.io/>
+ * SPDX-FileCopyrightText: 2022 Senne Van Baelen <senne@digitaldasein.org>
+ * SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+/* ##############################
+ * # Digital Dasein baisc CSS
+ * ##############################
+ *
+ * Containing:
+ * ==========
+ * - CSS VARIABLES
+ * - GENERAL
+ * - LISTS
+ *
+ * List of available classes:
+ * - roman:              roman numbering (1 level) for ordered lists
+ *
+ */
+
+/* =============== */
+/* CSS VARIABLES   */
+/* =============== */
+
+/*
+ * Note that you could simply adjust the parameters on each dd-element too
+ * (which sometimes might be necessary to overwrite defaults)
+ * E.g.: dd-titlepage { --dd-color-text: blue; }
+ *
+ * */
+dd-slide-collection {
+   --dd-color-prim:        rgba(153, 155, 132, 1);
+   --dd-color-prim-dark:   rgba(65, 90, 72, 1);
+   --dd-color-sec:         rgba(248, 237, 227, 1);
+   --dd-color-sec-dark:    rgba(238, 254, 216, 1);
+   --dd-color-list-bg:     rgba(248, 237, 227, 0.5);
+   --dd-color-text:        rgba(0, 0, 0, 0.9);
+   --dd-color-text-light:  rgba(255, 255, 255, 1);
+
+   --dd-color-caption-bg:  var(--dd-color-prim-dark);
+   --dd-color-caption-fg:  var(--dd-text-color-light);
+   --dd-color-heading:     var(--dd-color-prim-dark);
+
+   --dd-slide-gap:         96px;
+   --dd-slide-ratio:       calc(16/9);
+   --dd-slide-width:       1024px;
+   --dd-full-scale-factor: 1;
+
+   --dd-font:              24px/2 'Roboto', sans-serif;
+   --dd-font-size:         24px;
+   --dd-caption-height:    250px;
+
+   /* Slide */
+   --dd-slide-gridspace-row:  10px;
+   --dd-slide-gridspace-col:  10px;
+   --dd-slide-nr-font-size:   16px;
+   --dd-slide-nr-right:       13px;
+   --dd-slide-nr-color:       var(--dd-color-text);
+   --dd-slide-nr-bottom:      var(--dd-footer-bottom);
+   --dd-slide-pad-top:        0px;
+   --dd-slide-pad-top-content:0px;
+   --dd-slide-pad-left:       25px;
+   --dd-slide-pad-right:      25px;
+
+   /* Titlepage */
+   --dd-titlepage-padding-side:      50px;
+   --dd-titlepage-padding-top-top:   10px;
+   --dd-titlepage-padding-mid-top:   100px;
+   --dd-titlepage-padding-bot-top:   10px;
+   --dd-titlepage-align-lsec:        left;
+   --dd-titlepage-align-rsec:        right;
+   --dd-titlepage-w-left:            100%;
+   --dd-titlepage-h-top:             calc(0.15 * var(--dd-slide-height));
+   --dd-titlepage-h-middle:          var(--dd-slide-height) - var(--dd-titlepage-h-top) - var(--dd-titlepage-h-bottom);
+   --dd-titlepage-h-bottom:          calc(0.2 * var(--dd-slide-height));
+   --dd-titlepage-font-size:         24px;
+   --dd-titlepage-title-font-size:   calc(2.15 * var(--dd-titlepage-font-size));
+   --dd-titlepage-subtitle-font-size:calc(0.6 * var(--dd-titlepage-title-font-size));
+   --dd-titlepage-logo-height:       calc(var(--dd-titlepage-h-top) / 1.3);
+   --dd-titlepage-logo-top:          calc(var(--dd-titlepage-h-top) - var(--dd-titlepage-logo-height) / 2);
+   --dd-titlepage-logo-left:         var(--dd-titlepage-padding-side);
+   --dd-titlepage-color-fg-top:      var(--dd-color-text);
+   --dd-titlepage-color-bg-top:      var(--dd-color-sec);
+   --dd-titlepage-color-fg-mid:      var(--dd-color-text-light);
+   --dd-titlepage-color-bg-mid:      var(--dd-color-prim);
+   --dd-titlepage-color-fg-bot:      var(--dd-color-text);
+   --dd-titlepage-color-bg-bot:      var(--dd-color-sec);
+
+   /* Footer */
+   --dd-footer-height:        30px;
+   --dd-footer-img-height:    var(--dd-footer-height);
+   --dd-footer-padding-side:  0px ;
+   --dd-footer-padding-bottom:0px;
+   --dd-footer-padding-text:  0 2px 0 2px;
+   --dd-footer-font-size:     14px;
+   --dd-footer-bottom:        var(--progress-height, 0em);
+   --dd-footer-color-bg:      "";
+
+   /* grid */
+   --dd-gridspace-row: 10px;
+   --dd-gridspace-col: 10px;
+}
+
+/* ========== */
+/* GENERAL    */
+/* ========== */
+
+p, ul, ol, div {
+    line-height:1.65em;
+}
+
+/* ========== */
+/* LISTS      */
+/* ========== */
+
+.slide ol,
+.slide ul {
+    margin-top:0.5em;
+}
+
+.slide ol ol,
+.slide ul ul,
+.slide ol ul,
+.slide ul ol,
+.slide ol ol ol,
+.slide ul ul ul {
+    margin-top:0;
+}
+
+.slide ol,
+.slide ol ol,
+.slide ol ol ol,
+.slide ol ul,
+.slide ul ol {
+    padding-left:1em;
+}
+
+.slide ol.roman ol,
+.slide ol.roman ul,
+.slide ol.roman ul,
+.slide ul.roman ol,
+.slide ol.roman ol ol,
+.slide ul.roman ul ul {
+    padding-left:0em;
+}
+
+.slide ol { counter-reset: item; }
+.slide ol li {  display: block; }
+.slide ol ol{ counter-reset: item; }
+.slide ol ul { counter-reset: item; }
+
+.slide ol > ul li:before  {
+    content: counter(item) ". ";
+    counter-increment: item;
+    color: var(--heading-color) ;
+}
+
+.slide ol li:before  {
+    content: counter(item) ". ";
+    counter-increment: item;
+    color: var(--heading-color) ;
+}
+
+.slide ol > li > ol > li:before  {
+    content: counters(item, ".") " ";
+    counter-increment: item;
+    color: var(--heading-color) ;
+    /*font-size: 0.8em ;*/
+    margin-right: 0.3em;
+    margin-left: 0.55em;
+}
+
+.slide ol ol ol li:before  {
+    margin-left: 1.5em;
+}
+
+.slide li ol > li:before {
+    content: counters(item, ".") " ";
+    counter-increment: item;
+    color: var(--heading-color) ;
+    font-size: 0.86em ;
+}
+
+.slide ol.roman { counter-reset: item; }
+.slide ol.roman li { display: block; }
+
+.slide ol.roman  li {
+    list-style: none;
+    display:table-row;
+    margin:-1em;
+    /*line-height: 1.5em;*/
+}
+.slide ul > li > ol.roman  li {
+    /*line-height: 1.2em;*/
+}
+
+.slide ol.roman  li:before  {
+    content: "(" counter(item, lower-roman) ") ";
+    counter-increment: item;
+    color: var(--heading-color) ;
+    display: table-cell;
+    text-align: right;
+    padding-right:0.35em ;
+}
+
+.slide ol.roman,
+.slide ol.roman > li > ol {
+    padding-left:0.5em;
+}
+
+.slide li ol.roman > li:before{
+    display: table-cell;
+    content: "(" counter(item, lower-roman) ") ";
+    counter-increment: item;
+    color: var(--heading-color) ;
+    /*padding-right:0 ;*/
+    padding-left:0.95em;
+    vertical-align:3%;
+    /*width:0.2em;*/
+}

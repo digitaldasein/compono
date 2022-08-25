@@ -5,8 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Compono - full example</title>
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+    <link rel="stylesheet" href="./styles/roboto_font.css">
+    <link rel="stylesheet" href="./styles/shower.css">
+    <link rel="stylesheet" href="./styles/dd_basic.css">
+    <script src="./lib/shower.js"></script>
+    <script src="./lib/libcompono.js"></script>
+    <script async src="./lib/mathjax/tex-chtml.js"></script>
+    <style>
+      @media print {@page {margin:0; size:1024px 576px;}}
+      /* add custom style here (or in separate stylesheet) */
+    </style>
   </head>
-  <body>
+  <body class="shower">
     <dd-slide-collection main-title="Full presentation template"
                          sub-title="Contains several examples on how to exploit <code>dd-components</code>"
                          author="Senne Van Baelen, Gerben Peeters"
@@ -222,5 +232,6 @@
       </dd-slide>
 
     </dd-slide-collection>
+    <div class="progress"></div>
   </body>
 </html>

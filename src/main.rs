@@ -70,6 +70,9 @@ const HTML_MINIMAL_VIM:&str = include_str!("./templates/minimal_vim.html");
 const HTML_CSS_VARS:&str = include_str!("./templates/css_vars.html");
 const HTML_EXAMPLE:&str = include_str!("./templates/example.html");
 
+const HTML_DEFAULT_STYLE:&str = r#"@media print {@page {margin:0; size:1024px 576px;}}
+      /* add custom style here (or in separate stylesheet) */"#;
+
 const HTML_SAMPLE_VIDEO:&[u8] = include_bytes!("./assets/sample.mp4");
 const HTML_VIDEO_DIR:&str = "videos";
 const HTML_SAMPLE_LOGO:&[u8] = include_bytes!("./assets/logo.svg");
@@ -251,10 +254,11 @@ enum Stylesheet {
 
 #[derive(Clone, ArgEnum, Debug)]
 enum UpdateHeaderOpt {
-    Css,
-    Js,
-    JsModule,
-    JsAsync
+    Style,
+    CssLink,
+    JsSrc,
+    JsSrcModule,
+    JsSrcAsync
 }
 
 #[derive(Clone, ArgEnum, Debug)]
@@ -405,27 +409,33 @@ fn add_font_files(styles_dir:std::path::PathBuf)
     Ok(())
 }
 
-fn update_header(v_html:& mut Vec<String>, filename:&str, part:UpdateHeaderOpt) {
+fn update_header(v_html:& mut Vec<String>, content:&str, part:UpdateHeaderOpt) {
 
     let new_header = match part {
-        UpdateHeaderOpt::Css => {
+        UpdateHeaderOpt::Style => {
+            format!(r#"{0}
+    <style>
+      {1}
+    </style>"#, v_html[0].trim(), content)
+        },
+        UpdateHeaderOpt::CssLink => {
             format!(r#"{0}
     <link rel="stylesheet" href="{1}/{2}">"#, v_html[0].trim(),
-                                              DIR_STYLES, filename)
+                                              DIR_STYLES, content)
         },
-        UpdateHeaderOpt::Js => {
+        UpdateHeaderOpt::JsSrc => {
             format!(r#"{0}
-    <script src="{1}/{2}"></script>"#, v_html[0].trim(), DIR_LIB, filename)
+    <script src="{1}/{2}"></script>"#, v_html[0].trim(), DIR_LIB, content)
         },
-        UpdateHeaderOpt::JsModule => {
+        UpdateHeaderOpt::JsSrcModule => {
             format!(r#"{0}
     <script type="module" src="{1}/{2}"></script>"#, v_html[0].trim(),
-                                                     DIR_LIB, filename)
+                                                     DIR_LIB, content)
         }
-        UpdateHeaderOpt::JsAsync => {
+        UpdateHeaderOpt::JsSrcAsync => {
             format!(r#"{0}
     <script async src="{1}/{2}"></script>"#, v_html[0].trim(),
-                                             DIR_LIB, filename)
+                                             DIR_LIB, content)
         }
 
     };
@@ -914,14 +924,11 @@ Overwrite it (y/[n])? ", output_path_html.display()));
 from `{}`", tpath.display()))?
     } else {
         match template {
-            Template::Minimal => { HTML_MINIMAL.to_string() }
-            Template::MinimalVim => { HTML_MINIMAL_VIM.to_string() }
-            Template::CssVars => {
-                HTML_CSS_VARS.replace("DEFAULT_CSS_VARS",
-                                      &css_vars::get_default_css_vars("", "      ", ""))
-                             .trim()
-                             .to_string() }
-            Template::Example => {
+            Template::Minimal => HTML_MINIMAL,
+            Template::MinimalVim => HTML_MINIMAL_VIM,
+            Template::CssVars => HTML_CSS_VARS,
+            Template::Example | Template::ExampleCssVars => {
+                // add additional assets
                 let viddir = output_dir.join(HTML_VIDEO_DIR);
                 let vidfile = viddir.join("sample.mp4");
                 fs::create_dir_all(&viddir)?;
@@ -934,30 +941,7 @@ from `{}`", tpath.display()))?
                 fs::write(&logofile, HTML_SAMPLE_LOGO)
                     .with_context(|| format!("Failed to write logo `{}`",
                             logofile.display()))?;
-                HTML_EXAMPLE.to_string()
-            }
-            Template::ExampleCssVars => {
-                let viddir = output_dir.join(HTML_VIDEO_DIR);
-                let vidfile = viddir.join("sample.mp4");
-                fs::create_dir_all(&viddir)?;
-                fs::write(&vidfile, HTML_SAMPLE_VIDEO)
-                    .with_context(|| format!("Failed to write video `{}`",
-                            vidfile.display()))?;
-                let imgdir = output_dir.join(HTML_IMG_DIR);
-                let logofile = imgdir.join("logo.svg");
-                fs::create_dir_all(&imgdir)?;
-                fs::write(&logofile, HTML_SAMPLE_LOGO)
-                    .with_context(|| format!("Failed to write logo `{}`",
-                            logofile.display()))?;
-                HTML_EXAMPLE.replace("</style>",
-                                  &css_vars::get_default_css_vars(
-                                      "  ",
-                                      "      ",
-                                      "\n    </style>\n"
-                                      )
-                                  )
-                          .trim()
-                          .to_string()
+                HTML_EXAMPLE
             }
         }.to_string()
     };
@@ -982,7 +966,7 @@ from `{}`", tpath.display()))?
         if *no_inline_fonts {
             add_font_files(styles_dir.clone())?;
             update_header(&mut v_html_content,
-                CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
+                CSS_ROBOTO_FNAME, UpdateHeaderOpt::CssLink);
             let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
             fs::write(output_path_css.clone(), CSS_ROBOTO)
                 .with_context(|| format!("Failed to write file `{}`",
@@ -990,7 +974,7 @@ from `{}`", tpath.display()))?
 
         } else {
             update_header(&mut v_html_content,
-                CSS_ROBOTO_FNAME, UpdateHeaderOpt::Css);
+                CSS_ROBOTO_FNAME, UpdateHeaderOpt::CssLink);
             let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
             fs::write(output_path_css.clone(), CSS_ROBOTO_INLINE)
                 .with_context(|| format!("Failed to write file `{}`",
@@ -1000,7 +984,7 @@ from `{}`", tpath.display()))?
     }
     if *shower {
         update_header(&mut v_html_content,
-                      SHOWER_FNAME_OUT_CSS, UpdateHeaderOpt::Css);
+                      SHOWER_FNAME_OUT_CSS, UpdateHeaderOpt::CssLink);
         let output_path_shower_css = styles_dir.join(SHOWER_FNAME_OUT_CSS);
         fs::write(output_path_shower_css.clone(), SHOWER_STR_CSS)
             .with_context(|| format!("Failed to write file `{}`",
@@ -1018,7 +1002,7 @@ from `{}`", tpath.display()))?
             fs::write(&output_path_css, CSS_DD_BASIC)
                 .with_context(|| format!("Failed to write file `{}`",
                         output_path_css.display()))?;
-            update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
+            update_header(&mut v_html_content, fname, UpdateHeaderOpt::CssLink);
 
         }
         Stylesheet::DdVars => {
@@ -1030,7 +1014,7 @@ from `{}`", tpath.display()))?
                 .with_context(|| format!("Failed to write file `{}`",
                         output_path_css.display()))?;
 
-            update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
+            update_header(&mut v_html_content, fname, UpdateHeaderOpt::CssLink);
         }
     }
     // custom stylesheet
@@ -1046,7 +1030,7 @@ from `{}`", css_path.display()))?;
                         output_path_css.display()))?;
 
             if let Some(fname_str) = fname.to_str() {
-                update_header(&mut v_html_content, fname_str, UpdateHeaderOpt::Css);
+                update_header(&mut v_html_content, fname_str, UpdateHeaderOpt::CssLink);
             }
         }
     }
@@ -1054,11 +1038,11 @@ from `{}`", css_path.display()))?;
     // scripts
     if *shower {
         update_header(&mut v_html_content,
-                      SHOWER_FNAME_OUT_JS, UpdateHeaderOpt::Js);
+                      SHOWER_FNAME_OUT_JS, UpdateHeaderOpt::JsSrc);
         update_header(&mut v_html_content,
-                      LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::Js);
+                      LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::JsSrc);
     } else {
-        update_header(&mut v_html_content, LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::Js);
+        update_header(&mut v_html_content, LIBCOMPONO_FNAME_OUT, UpdateHeaderOpt::JsSrc);
     };
 
     let output_path_libcompono = lib_dir.join(LIBCOMPONO_FNAME_OUT);
@@ -1068,7 +1052,8 @@ from `{}`", css_path.display()))?;
 
     if *mathjax {
         update_header(&mut v_html_content,
-                      MATHJAX_NAME_OUT, UpdateHeaderOpt::JsAsync);
+
+                      MATHJAX_NAME_OUT, UpdateHeaderOpt::JsSrcAsync);
         let odir = lib_dir.join(MATHJAX_SUBDIR);
             fs::create_dir_all(&odir)?;
         let output_path_mathjax = lib_dir.join(MATHJAX_NAME_OUT);
@@ -1087,6 +1072,26 @@ from `{}`", css_path.display()))?;
                     output_fpath.display()))?;
         }
     }
+
+    // update inline style (as last, to make it a prio)
+    match template {
+        Template::Minimal |
+        Template::MinimalVim |
+        Template::Example =>
+        {
+            update_header(&mut v_html_content,
+                HTML_DEFAULT_STYLE, UpdateHeaderOpt::Style)
+        }
+        Template::CssVars |
+        Template::ExampleCssVars =>
+        {
+            update_header(&mut v_html_content,
+                &format!("{0}\n      {1}",
+                    HTML_DEFAULT_STYLE,
+                    &css_vars::get_default_css_vars("", "      ", "")),
+                UpdateHeaderOpt::Style)
+        }
+    };
 
     if *shower {
         let output_path_shower_js = lib_dir.join(SHOWER_FNAME_OUT_JS);
@@ -1124,9 +1129,9 @@ from `{}`", css_path.display()))?;
 {0}"#, v_html_content[3].trim());
     }
 
-    let html_content = v_html_content.join("");
+    // update inline style last so it has prio
+    let html_content = v_html_content .join("");
 
-    // write html output
     fs::write(output_path_html.clone(), html_content)
         .with_context(|| format!("Failed to write file `{}`",
                                  output_path_html.display()))?;
