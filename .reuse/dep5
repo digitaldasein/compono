@@ -65,7 +65,7 @@ Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
 License: MIT
 
 # Cargo.*
-Files: Cargo.*
+Files: Cargo.* **/Cargo.*
 Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
 Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
 Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
@@ -82,3 +82,17 @@ License: MIT
 Files: src/styles/fonts/*
 Copyright: 2011 Google Inc. All Rights Reserved.
 License: Apache-2.0
+
+# auto-generated content
+Files: src/mathjax_font_files.rs
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT
+
+# Assets
+Files: compono.gif src/assets/*
+Copyright: $YEAR $NAME Digital Dasein <https://digital-dasein.gitlab.io>
+Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
+Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
+License: MIT

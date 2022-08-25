@@ -1,3 +1,6 @@
-/target
+target
 /npm-test
 /mydir
+/node_modules
+node_modules
+target

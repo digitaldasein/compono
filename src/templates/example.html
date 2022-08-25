@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Compono - full example</title>
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+    <style>
+      @media print {@page {margin:0; size:1024px 576px;}}
+      /* add custom style here (or in separate stylesheet) */
+    </style>
+  </head>
+  <body>
+    <dd-slide-collection main-title="Full presentation template"
+                         sub-title="Contains several examples on how to exploit <code>dd-components</code>"
+                         author="Senne Van Baelen, Gerben Peeters"
+                         organisation="Digital Dasein"
+                         organisation-url=""
+                         date="2022-08-22"
+                         url=""
+                         img-src="img/logo.svg"
+                         img-url="">
+
+      <!-- USEFUL COMPONENTS -->
+      <dd-footer></dd-footer>
+      <!--remove auto-injected left image from footer by outcommenting next line-->
+      <!--<dd-footer img-left=""></dd-footer>-->
+      <dd-titlepage></dd-titlepage>
+      <dd-titlepage main-title="A tilepage with centered content"
+                    sub-title="Note we could also center <i>only</i> text or image"
+                    html-bot-left="<b>custom HTML</b> on the <i>bottom </i> (left column defaults to 100% width)"
+                    center>
+      </dd-titlepage>
+
+      <dd-slide>
+        <h2>Unordered list</h2>
+        Let's make an <b>unordered</b> list
+        <ul>
+          <li>A list item</li>
+          <li><b>Feel free to change the list items for each level in the
+              stylesheet</b>
+            <ul>
+              <li>a sub-item</li>
+              <li>another sub-item
+                <ul>
+                  <li>or even a sub-sub-item</li>
+                </ul>
+              </li>
+              <li>a third sub-item</li>
+            </ul>
+          </li>
+          <li>So let's add another one</li>
+        </ul>
+      </dd-slide>
+
+      <dd-slide>
+        <h2>Ordered lists</h2>
+        Let's make an <b>ordered</b> list
+        <ol>
+          <li>A numbered list item
+            <ol>
+              <li>a sub-item</li>
+              <li>another sub-item
+                <ol>
+                  <li>and a sub-sub-item</li>
+                </ol>
+              </li>
+              <li>a third sub-item</li>
+            </ol>
+          </li>
+          <li>So let's add another one</li>
+        </ol>
+
+        <p>By default, HTML does not compute nested subsection numbers (e.g. 2.1, 2.2). The built-in themes `dd-basic` have classes to overcome
+        this.
+        </p>
+      </dd-slide>
+
+      <dd-slide>
+        <h2>Incremental slides segments (requires shower backend)</h2>
+        <ul>
+          <li>A list item</li>
+          <li class="next">This one comes later</li>
+          <li class="next">This one after that</li>
+        </ul>
+        <p class="next">
+        This require the shower backend, available with the <code>--shower</code> option.
+        </p>
+      </dd-slide>
+
+      <dd-slide no-footer>
+        <h2>this slide has no footer</h2>
+        <p>Using the <code>no-footer</code> attribute in <code>dd-slide</code></p>
+      </dd-slide>
+
+      <dd-slide style="background-color:blue" shout>
+        A blue slide, with <b>shouted</b> content
+        <p style="font-size:20px;">(set font-size with <code>--dd-slide-shout-size</code>)</p>
+      </dd-slide>
+
+      <dd-slide>
+        <h2>this slide has no <i>default</i> footer, but a <b>custom override</b></h2>
+        <dd-footer text-left="<b>boldLeft</b>"
+                   img-right="img/logo.svg"
+                   text-center="Some center HTML <i>goes</i> <b>here</b>"
+                   text-right="right">
+        </dd-footer>
+      </dd-slide>
+
+      <dd-slide>
+        <h2>Use <code>dd-grid</code> component (+ border as <code>slot-style</code>)</h2>
+        <dd-grid dim="33 33 33; 25 75;"
+                 style="padding-top:10px;"
+                 slot-style="border: 1px solid black">
+          <div slot=1>
+            <video controls width="100%" autoplay muted>
+              <source src="videos/sample.mp4" type="video/mp4">
+            </video>
+          </div>
+         <div slot=2>
+           <video controls autoplay muted>
+             <source src="videos/sample.mp4" type="video/mp4">
+           </video>
+          </div>
+          <div slot=3>
+            <video controls width="100%" autoplay muted>
+              <source src="videos/sample.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div slot=4>
+            <video controls height="100px">
+              <source src="videos/sample.mp4" type="video/mp4">
+            </video>
+          </div>
+          <!--deliberately omit slot 5 which will trigger an auto-fill-->
+        </dd-grid>
+        <i>Deliberately omitted slot 5 (triggers auto-fill)</i>
+      </dd-slide>
+
+      <dd-slide dim="50 50; 50 50;" center>
+        <h2>Use <code>dim</code> attribute from <code>dd-slide</code> as 2x2 grid</h2>
+        <div slot="1">
+          slot 1 (slide-content is centered)
+        </div>
+        <div slot="2">
+          slot 2 (slide-content is centered)
+        </div>
+        <div slot="3">
+          slot 3 (slide-content is centered)
+        </div>
+        <div slot="4">
+          slot 4 (slide-content is centered)
+        </div>
+      </dd-slide>
+
+      <!--[>============================================================ <]-->
+      <!--<section class="slide">[> SLIDE 7 [[[ <]-->
+        <!--<h2>Always be consistent with images (aligning, ...)</h2>-->
+        <!--<ul>-->
+          <!--<li><b>It's just much more efficient!</b> (-->
+            <!--<code style="font-size:0.7em;"> e.g.: parent divs + padding + 100% width-->
+            <!--</code>:-->
+            <!--simple!)</li>-->
+          <!--<li>images and grids go hand in hand!</li>-->
+          <!--<li>snippet of right column in previous slide:-->
+            <!--<pre>-->
+          <!--<code style="font-size:0.45em;margin-top:-20px;">-->
+    <!--&lt;div style="padding:0 0 0 0;"&gt;-->
+      <!--&lt;div style="padding:0px 10px 0 10px;"&gt;-->
+        <!--&lt;img width="100%" src="figures/logo_kul.svg"&gt;-->
+        <!--&lt;div class="img-caption"&gt;-->
+          <!--&lt;span&gt;&lt;b&gt;Fig. &lt;/b&gt;: KUL logo&lt;/span&gt;-->
+        <!--&lt;/div&gt;-->
+      <!--&lt;/div&gt;&lt;!--end image--&gt;-->
+      <!--&lt;div style="padding:40px 10px 0 10px;"&gt;-->
+        <!--&lt;img width="100%" src="figures/cogge_comp.png"&gt;-->
+        <!--&lt;div class="img-caption"&gt;-->
+          <!--&lt;span&gt;&lt;b&gt;Fig. &lt;/b&gt;: some other figure&lt;/span&gt;-->
+        <!--&lt;/div&gt;-->
+      <!--&lt;/div&gt;&lt;!--end image--&gt;-->
+    <!--&lt;/div&gt;&lt;!--end grid column--&gt;-->
+          <!--</code>-->
+            <!--</pre>-->
+          <!--</li>-->
+        <!--</ul>-->
+        <!--<my-footer></my-footer>-->
+      <!--</section>[> SLIDE ]]] <]-->
+      <!--============================================================ -->
+
+      <dd-slide>
+        <h2>Math (requires <code>--mathjax</code> option)</h2>
+        Let's include some math using the MathJax plugin
+        <div>
+          \[
+          \left( \sum_{k=1}^n a_k b_k \right)^2 \leq \left(
+          \sum_{k=1}^n a_k^2 \right) \left( \sum_{k=1}^n b_k^2 \right)
+          \]
+        </div>
+      </dd-slide>
+
+      <dd-slide>
+         <h2>Print to PDF</h2>
+         &rarr; Open your presentation in <b>Chrome/Chromium</b>, and press <code>Ctrl+P</code> (print)
+      </dd-slide>
+
+      <dd-slide>
+        <h2>Available CSS variables</h2>
+        A collection of <b>CSS variables</b> and their <b>corresponding defaults</b> is available <a
+          href="https://github.com/digitaldasein/compono/blob/main/src/css_vars.rs">here</a>.
+
+        <p>These variables can be set on any parent element (e.g.: from <code>:root</code> up until <code>dd-slide-collection</code>), or on the associated
+        custom HTML elements themselves (e.g. <code>dd-footer</code>).</p>
+      </dd-slide>
+
+      <dd-slide>
+         <h2>More info</h2>
+         &rarr; Check out the <i>open-source</i> <a href="https://github.com/digitaldasein/compono">Github project</a>
+         <ul>
+           <li><a href="https://github.com/digitaldasein/compono#create">Create a presentation (all OPTIONS)</a></li>
+           <li><a href="https://github.com/digitaldasein/compono#publish">Publish a presentation</a></li>
+           <li><a href="https://github.com/digitaldasein/compono#archive">Archive a presentation</a></li>
+           <li><a href="https://github.com/digitaldasein/compono#custom-html-elements">Available <code>dd-components</code></a>, with links to their
+             corresponding docs</li>
+           <li><a href="https://github.com/digitaldasein/compono#examples">Some more <code>compono</code> examples</a></li>
+         </ul>
+      </dd-slide>
+
+    </dd-slide-collection>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+[package]
+name = "compono-utils"
+version = "0.0.1"
+edition = "2021"
+description = "Utilities a part of the compono pre-build"
+
+[dependencies]

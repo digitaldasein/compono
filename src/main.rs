@@ -29,6 +29,9 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use rpassword::read_password;
 
+// relative imports
+mod css_vars;
+
 /*---------------------------------------------------------------------
  * Config
  *---------------------------------------------------------------------*/
@@ -44,6 +47,13 @@ const LIBCOMPONO_STR:&str = include_str!("../lib/libcompono/dist/libcompono.min.
 const SHOWER_FNAME_OUT_JS:&str = "shower.js";
 const SHOWER_STR_JS:&str = include_str!("../lib/libcompono/examples/shower/lib/shower/core/dist/shower.js");
 
+const MATHJAX_SUBDIR:&str = "mathjax";
+const MATHJAX_NAME_OUT:&str = "mathjax/tex-chtml.js";
+const MATHJAX_JS_STR:&str = include_str!("../lib/mathjax/node_modules/mathjax/es5/tex-chtml.js");
+const MATHJAX_FONT_DIR:&str = "output/chtml/fonts/woff-v2/";
+
+const MATHJAX_FONT_FILES: &[(&str, &[u8])] = &include!("./mathjax_font_files.rs");
+
 const SHOWER_FNAME_OUT_CSS:&str = "shower.css";
 const SHOWER_STR_CSS:&str = include_str!("./styles/shower.css");
 
@@ -57,12 +67,19 @@ const SHOWER_PROGRESS_HTML:&str = r#"<div class="progress"></div>"#;
 
 const HTML_MINIMAL:&str = include_str!("./templates/minimal.html");
 const HTML_MINIMAL_VIM:&str = include_str!("./templates/minimal_vim.html");
+const HTML_CSS_VARS:&str = include_str!("./templates/css_vars.html");
+const HTML_EXAMPLE:&str = include_str!("./templates/example.html");
+
+const HTML_SAMPLE_VIDEO:&[u8] = include_bytes!("./assets/sample.mp4");
+const HTML_VIDEO_DIR:&str = "videos";
+const HTML_SAMPLE_LOGO:&[u8] = include_bytes!("./assets/logo.svg");
+const HTML_IMG_DIR:&str = "img";
 
 const CSS_ROBOTO:&str = include_str!("./styles/roboto_font.css");
 const CSS_ROBOTO_INLINE:&str = include_str!("./styles/roboto_font_inline.css");
 const CSS_ROBOTO_FNAME:&str = "roboto_font.css";
 const CSS_DD_BASIC:&str = include_str!("./styles/dd_basic.css");
-const CSS_SHOWER_DD_BASIC:&str = include_str!("./styles/shower_dd_basic.css");
+const CSS_DD_VARS:&str = include_str!("./styles/dd_vars.css");
 
 const DEFAULT_SSH_KEY_PATH_STR:&str = "$HOME/.ssh/id_ed25519";
 const DEFAULT_SSH_KEY_HOME:&str = ".ssh/id_ed25519";
@@ -82,12 +99,6 @@ const ARCHIVE_OUT_NAME:&str = "present-<date>";
 const ZIP_METHOD_STORED:zip::CompressionMethod = zip::CompressionMethod::Stored;
 const ZIP_METHOD_DEFLATED:zip::CompressionMethod = zip::CompressionMethod::Deflated;
 
-/*#[cfg(not(any(*/
-    /*feature = "deflate",*/
-    /*feature = "deflate-miniz",*/
-    /*feature = "deflate-zlib"*/
-/*)))]*/
-/*const METHOD_DEFLATED: Option<zip::CompressionMethod> = None;*/
 
 // CLI
 #[derive(Parser)]
@@ -108,7 +119,7 @@ enum Commands {
     Create {
         /// Use HTML template for presentation.
         /// For a custom template path, see the `--template-path` option.
-        #[clap(short, long, value_parser, arg_enum,
+        #[clap(short='T', long, value_parser, arg_enum,
                default_value_t = Template::Minimal) ]
         template: Template,
 
@@ -126,7 +137,7 @@ enum Commands {
 
         /// Theme (CSS styles).
         /// For a custom css path, see the `--css-path` option.
-        #[clap(short='T', long, value_parser, arg_enum,
+        #[clap(short='t', long, value_parser, arg_enum,
                default_value_t = Stylesheet::None)
         ]
         theme: Stylesheet,
@@ -138,6 +149,10 @@ enum Commands {
         /// Include shower presentation javascript core
         #[clap(short, long, action)]
         shower: bool,
+
+        /// Include mathjax engine for rendering math (LaTeX-like)
+        #[clap(short, long, action)]
+        mathjax: bool,
 
         /// Do not inline font binaries in CSS (applicable to most themes)
         #[clap(short, long, action)]
@@ -222,22 +237,24 @@ enum Commands {
 enum Template {
     Minimal,
     MinimalVim,
-    StyleProps,
-    Full,
+    CssVars,
+    Example,
+    ExampleCssVars,
 }
 
 #[derive(Clone, ArgEnum, Debug)]
 enum Stylesheet {
     None,
+    DdVars,
     DdBasic,
-    ShowerDdBasic,
 }
 
 #[derive(Clone, ArgEnum, Debug)]
 enum UpdateHeaderOpt {
     Css,
     Js,
-    JsModule
+    JsModule,
+    JsAsync
 }
 
 #[derive(Clone, ArgEnum, Debug)]
@@ -395,16 +412,22 @@ fn update_header(v_html:& mut Vec<String>, filename:&str, part:UpdateHeaderOpt) 
             format!(r#"{0}
     <link rel="stylesheet" href="{1}/{2}">"#, v_html[0].trim(),
                                               DIR_STYLES, filename)
-        }
+        },
         UpdateHeaderOpt::Js => {
             format!(r#"{0}
     <script src="{1}/{2}"></script>"#, v_html[0].trim(), DIR_LIB, filename)
-        }
+        },
         UpdateHeaderOpt::JsModule => {
             format!(r#"{0}
     <script type="module" src="{1}/{2}"></script>"#, v_html[0].trim(),
                                                      DIR_LIB, filename)
         }
+        UpdateHeaderOpt::JsAsync => {
+            format!(r#"{0}
+    <script async src="{1}/{2}"></script>"#, v_html[0].trim(),
+                                             DIR_LIB, filename)
+        }
+
     };
 
     v_html[0] = new_header;
@@ -853,6 +876,7 @@ fn create_presentation(template:&Template,
                        output_dir:&std::path::PathBuf,
                        filename:&Option<std::path::PathBuf>,
                        shower:&bool,
+                       mathjax:&bool,
                        no_inline_fonts:&bool)
                        -> Result<(), Box<dyn std::error::Error>> {
 
@@ -890,10 +914,51 @@ Overwrite it (y/[n])? ", output_path_html.display()));
 from `{}`", tpath.display()))?
     } else {
         match template {
-            Template::Minimal => { HTML_MINIMAL }
-            Template::MinimalVim => { HTML_MINIMAL_VIM }
-            Template::StyleProps => { HTML_MINIMAL_VIM }
-            Template::Full => { HTML_MINIMAL_VIM }
+            Template::Minimal => { HTML_MINIMAL.to_string() }
+            Template::MinimalVim => { HTML_MINIMAL_VIM.to_string() }
+            Template::CssVars => {
+                HTML_CSS_VARS.replace("DEFAULT_CSS_VARS",
+                                      &css_vars::get_default_css_vars("", "      ", ""))
+                             .trim()
+                             .to_string() }
+            Template::Example => {
+                let viddir = output_dir.join(HTML_VIDEO_DIR);
+                let vidfile = viddir.join("sample.mp4");
+                fs::create_dir_all(&viddir)?;
+                fs::write(&vidfile, HTML_SAMPLE_VIDEO)
+                    .with_context(|| format!("Failed to write video `{}`",
+                            vidfile.display()))?;
+                let imgdir = output_dir.join(HTML_IMG_DIR);
+                let logofile = imgdir.join("logo.svg");
+                fs::create_dir_all(&imgdir)?;
+                fs::write(&logofile, HTML_SAMPLE_LOGO)
+                    .with_context(|| format!("Failed to write logo `{}`",
+                            logofile.display()))?;
+                HTML_EXAMPLE.to_string()
+            }
+            Template::ExampleCssVars => {
+                let viddir = output_dir.join(HTML_VIDEO_DIR);
+                let vidfile = viddir.join("sample.mp4");
+                fs::create_dir_all(&viddir)?;
+                fs::write(&vidfile, HTML_SAMPLE_VIDEO)
+                    .with_context(|| format!("Failed to write video `{}`",
+                            vidfile.display()))?;
+                let imgdir = output_dir.join(HTML_IMG_DIR);
+                let logofile = imgdir.join("logo.svg");
+                fs::create_dir_all(&imgdir)?;
+                fs::write(&logofile, HTML_SAMPLE_LOGO)
+                    .with_context(|| format!("Failed to write logo `{}`",
+                            logofile.display()))?;
+                HTML_EXAMPLE.replace("</style>",
+                                  &css_vars::get_default_css_vars(
+                                      "  ",
+                                      "      ",
+                                      "\n    </style>\n"
+                                      )
+                                  )
+                          .trim()
+                          .to_string()
+            }
         }.to_string()
     };
 
@@ -912,7 +977,7 @@ from `{}`", tpath.display()))?
     // stylesheets
     // roboto font
     if *shower || matches!(theme, Stylesheet::DdBasic)
-               || matches!(theme, Stylesheet::ShowerDdBasic) {
+               || matches!(theme, Stylesheet::DdVars) {
 
         if *no_inline_fonts {
             add_font_files(styles_dir.clone())?;
@@ -950,18 +1015,18 @@ from `{}`", tpath.display()))?
         Stylesheet::DdBasic => {
             let fname = "dd_basic.css";
             let output_path_css = styles_dir.join(fname);
-            //add_font_files(styles_dir.clone())?;
-            fs::write(output_path_css.clone(), CSS_DD_BASIC)
+            fs::write(&output_path_css, CSS_DD_BASIC)
                 .with_context(|| format!("Failed to write file `{}`",
                         output_path_css.display()))?;
             update_header(&mut v_html_content, fname, UpdateHeaderOpt::Css);
 
         }
-        Stylesheet::ShowerDdBasic => {
-            let fname = "shower_dd_basic.css";
+        Stylesheet::DdVars => {
+            let fname = "dd_vars.css";
             let output_path_css = styles_dir.join(fname);
-            //add_font_files(styles_dir.clone())?;
-            fs::write(output_path_css.clone(), CSS_SHOWER_DD_BASIC)
+            fs::write(&output_path_css, CSS_DD_VARS
+                .replace("DEFAULT_CSS_VARS", &css_vars::get_default_css_vars("","",""))
+                .trim())
                 .with_context(|| format!("Failed to write file `{}`",
                         output_path_css.display()))?;
 
@@ -1001,6 +1066,28 @@ from `{}`", css_path.display()))?;
         .with_context(|| format!("Failed to write file `{}`",
                 output_path_libcompono.display()))?;
 
+    if *mathjax {
+        update_header(&mut v_html_content,
+                      MATHJAX_NAME_OUT, UpdateHeaderOpt::JsAsync);
+        let odir = lib_dir.join(MATHJAX_SUBDIR);
+            fs::create_dir_all(&odir)?;
+        let output_path_mathjax = lib_dir.join(MATHJAX_NAME_OUT);
+        fs::write(&output_path_mathjax, MATHJAX_JS_STR)
+            .with_context(|| format!("Failed to write file `{}`",
+                    output_path_mathjax.display()))?;
+
+        // also include fonts
+        for (name, data) in MATHJAX_FONT_FILES {
+            let odir_fonts = odir.join(MATHJAX_FONT_DIR);
+            fs::create_dir_all(&odir_fonts)?;
+            let output_fpath = odir_fonts.join(name);
+            //println!("File {} is {} bytes", name, data.len());
+            fs::write(&output_fpath, data)
+            .with_context(|| format!("Failed to write Mathjax Font file `{}`",
+                    output_fpath.display()))?;
+        }
+    }
+
     if *shower {
         let output_path_shower_js = lib_dir.join(SHOWER_FNAME_OUT_JS);
         fs::write(output_path_shower_js.clone(), SHOWER_STR_JS)
@@ -1025,7 +1112,7 @@ from `{}`", css_path.display()))?;
         // body start
         v_html_content[1] = format!(r#"
   </head>
-  <body>    {}"#, v_html_content[1].trim());
+  <body>{}"#, v_html_content[1].trim());
 
         // body content
         v_html_content[2] = format!(r#"
@@ -1172,7 +1259,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     match &cli.command {
         Commands::Create { template, template_path,
                            theme, css_path, no_inline_fonts,
-                           output_dir, filename, shower } => {
+                           output_dir, filename, shower, mathjax } => {
             create_presentation(&template,
                                 template_path,
                                 &theme,
@@ -1180,6 +1267,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 output_dir,
                                 filename,
                                 shower,
+                                mathjax,
                                 no_inline_fonts)?;
         }
         Commands::Publish { input_dir, commit, method,

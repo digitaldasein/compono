@@ -24,6 +24,7 @@
 /* DD COMPLIANCE */
 /* ============= */
 
+
 dd-slide-collection {
     margin:0;
     /*max-height:0;*/
@@ -47,7 +48,7 @@ dd-titlepage,
         var(--slide-width) / var(--slide-ratio)
     );
 
-    --progress-size: 5px;
+    --progress-height: 5px;
     --progress-color: var(--dd-prim-color, rgba(153, 155, 132, 1));
 
     -webkit-text-size-adjust: none;
@@ -94,14 +95,14 @@ dd-titlepage,
     bottom: 0;
     left: 0;
     width: 0;
-    height: var(--progress-size);
+    height: var(--progress-height);
     background-color: var(--progress-color);
     transition: width 0.2s linear;
     box-shadow:
         calc(var(--slide-width) / 2) 0 0
         calc(var(--slide-width) / 2)
         var(--color-light);
-    clip: rect(0 var(--slide-width) var(--progress-size) 0);
+    clip: rect(0 var(--slide-width) var(--progress-height) 0);
 }
 
 /* List */
@@ -142,96 +143,6 @@ dd-titlepage,
 .shower.full .slide.active {
     clip: auto;
     visibility: visible;
-}
-
-/* Code */
-
-.slide pre {
-    margin-top: 0;
-    margin-bottom: 1em;
-    counter-reset: code;
-    white-space: normal;
-}
-
-/* Inner */
-
-.slide pre code {
-    display: block;
-    margin-left: calc(
-        var(--slide-left-side) * -1
-    );
-    padding: 0 0 0 var(--slide-left-side);
-    width: calc(
-        100% +
-        var(--slide-left-side) +
-        var(--slide-right-side)
-    );
-    background-color: transparent;
-    line-height: 2;
-    white-space: pre;
-    -moz-tab-size: 4;
-    tab-size: 4;
-}
-
-/* Line Numbers */
-
-.slide pre code:not(:only-child)::before {
-    position: absolute;
-    margin-left: -2em;
-    color: var(--color-light);
-    counter-increment: code;
-    content: counter(code, decimal-leading-zero) '.';
-}
-
-/* Marked */
-
-.slide pre mark {
-    position: relative;
-    z-index: -1;
-    margin: 0 -0.3em;
-}
-
-/* Important */
-
-.slide pre mark.important {
-    background-color: var(--color-key);
-    color: white;
-}
-
-/* Comment */
-
-.slide pre .comment {
-    color: var(--color-medium);
-}
-
-/* Marked Line */
-
-.slide pre code:not(:only-child).mark {
-    background-color: var(--color-yellow);
-}
-
-/* Next Line */
-
-.slide pre code:not(:only-child).mark.next {
-    visibility: visible;
-    background-color: transparent;
-}
-
-.slide pre code:not(:only-child).mark.next.active,
-.slide pre code:not(:only-child).mark.next.visited {
-    background-color: var(--color-yellow);
-}
-
-/* Full */
-
-.shower.full .slide pre code:not(:only-child).mark.next {
-    visibility: visible;
-    background-color: transparent;
-}
-
-.shower.full .slide pre code:not(:only-child).mark.next.active,
-.shower.full .slide pre code:not(:only-child).mark.next.visited {
-    background-color: var(--color-yellow);
 }
 
 /* Next */

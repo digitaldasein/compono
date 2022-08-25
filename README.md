@@ -13,30 +13,45 @@ SPDX-License-Identifier: MIT
 
 # Compono
 
+[![REUSE 
+status](https://api.reuse.software/badge/github.com/digitaldasein/compono)](https://api.reuse.software/info/github.com/digitaldasein/compono)
+
 A batteries-included **command-line utility** for **creating**, **publishing**, 
 and **archiving** component-based **HTML presentations**.  Quickly develop 
-content by exploiting a set of native [web 
+content by exploiting a set of [web 
 components](https://developer.mozilla.org/en-US/docs/Web/Web), included via the 
 [`libcompono` 
 library](https://gitlab.com/digital-dasein/software/html-presentations/libcompono).
 
-
 ## Quick start
 
-Download the [latest 
+<b>Download</b> the [latest 
 release](https://github.com/digitaldasein/compono/releases/) and move the 
-binary somewhere convenient (e.g. `/usr/local/bin/`).
+binary to a convenient location on your system (e.g.  `/usr/local/bin/`).
 
-Initialise presentation:
+Initialise <b>new, empty presentation</b>:
 
 ```
-compono create [OPTIONS]
+compono create
 ```
+
+Initialise an <b>example presentation</b>, including the 
+[`shower`](https://github.com/shower/shower) and 
+[`mathjax`](https://www.mathjax.org/) libraries, as well as the 
+[`dd-basic`](./src/styles/dd_basic.css) <b>theme</b>:
+
+```sh
+compono create --theme dd-basic --template example --shower --mathjax
+```
+(<i>short version</i>: `compono create -t dd-basic -T example -s -m`)
+
 
 ## Features
 
-- Batteries included: a **single (*static*) binary** (~4MB)
-- Built-in **stylesheets** and **HTML templates** for convenient initialisation
+- Batteries included: a **single (*static*) binary** (~5MB)
+- Generates an <b>all-local</b> HTML presentation base
+- Built-in, customisable **stylesheets** and **HTML templates** for 
+  seamless initialisation
 - Automatically publish your presentation to **Gitlab**, **Github**, or to a 
   **remote server**.
 - **Archive** and **compress** your presentation to a `.tar.gz`- or 
@@ -69,45 +84,45 @@ SUBCOMMANDS:
 ### Create
 
 ```bash
-Initialise new HTML presentation
+USAGE:
+    compono create [OPTIONS]
 
-SAGE:
-   compono create [OPTIONS]
+OPTIONS:
+    -c, --css-path <CSS_PATH>
+            Path to custom CSS stylesheet
 
-PTIONS:
-   -c, --css-path <CSS_PATH>
-           Path to custom CSS stylesheet
+    -f, --filename <FILENAME>
+            filename HTML output
 
-   -f, --filename <FILENAME>
-           filename HTML output
+    -h, --help
+            Print help information
 
-   -h, --help
-           Print help information
+    -m, --mathjax
+            Include mathjax engine for rendering math (LaTeX-like)
 
-   -n, --no-inline-fonts
-           Do not inline font binaries in CSS (applicable to most themes)
+    -n, --no-inline-fonts
+            Do not inline font binaries in CSS (applicable to most themes)
 
-   -o, --output-dir <OUTPUT_DIR>
-           Output directory path [default: ./]
+    -o, --output-dir <OUTPUT_DIR>
+            Output directory path [default: ./]
 
-   -p, --template-path <TEMPLATE_PATH>
-           Path to custom HTML template
+    -p, --template-path <TEMPLATE_PATH>
+            Path to custom HTML template
 
-   -s, --shower
-           Include shower presentation javascript core
+    -s, --shower
+            Include shower presentation javascript core
 
-   -t, --template <TEMPLATE>
-           Use HTML template for presentation. For a custom template path, see
-           the `--template-path` option [default: minimal] [possible values:
-           minimal, minimal-vim, style-props, full]
+    -t, --theme <THEME>
+            Theme (CSS styles). For a custom css path, see the `--css-path`
+            option [default: none] [possible values: none, dd-vars, dd-basic]
 
-   -T, --theme <THEME>
-           Theme (CSS styles). For a custom css path, see the `--css-path`
-           option [default: none] [possible values: none, dd-basic,
-           shower-dd-basic]
+    -T, --template <TEMPLATE>
+            Use HTML template for presentation. For a custom template path, see
+            the `--template-path` option [default: minimal] [possible values:
+            minimal, minimal-vim, css-vars, example, example-css-vars]
 
-   -V, --version
-           Print version information
+    -V, --version
+            Print version information
 ```
 
 ### Publish
@@ -228,7 +243,7 @@ TODO: `dd-code` component
   (new/existing) `output directory`, with a built-in `theme`:
 
   ```sh
-  compono create -t full -o my-out-dir -T dd-basic
+  compono create -t example -o my-out-dir -T dd-basic
   ```
 
 - extend with features from the [Shower 
@@ -373,6 +388,12 @@ Build:
 
 ```sh
 cargo build
+```
+
+### Run utils (optional)
+
+```sh
+cd utils && cargo run
 ```
 
 ## Attribution
