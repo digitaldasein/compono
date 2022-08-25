@@ -377,6 +377,12 @@ cd lib/libcompono \
 cd lib/libcompono && yarn build:shower
 ```
 
+#### Install MathJax
+
+```sh
+cd lib/mathajx && yarn install
+```
+
 ### Compono crate (Rust)
 
 Run program:
