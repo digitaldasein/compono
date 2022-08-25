@@ -9,7 +9,8 @@ SPDX-License-Identifier: MIT
 [quick start](#quick-start) &nbsp;&ndash;&nbsp; [features](#features) 
 &nbsp;&ndash;&nbsp; [docs](#docs) &nbsp;&ndash;&nbsp; [examples](#examples) 
 &nbsp;&ndash;&nbsp; [development](#development) &nbsp;&ndash;&nbsp; 
-[attribution](#attribution)
+[attribution](#attribution) &nbsp;&ndash;&nbsp; [licenses](#licenses)
+
 
 # Compono
 
@@ -18,9 +19,9 @@ status](https://api.reuse.software/badge/github.com/digitaldasein/compono)](http
 
 A batteries-included **command-line utility** for **creating**, **publishing**, 
 and **archiving** component-based **HTML presentations**.  Quickly develop 
-content by exploiting a set of [web 
-components](https://developer.mozilla.org/en-US/docs/Web/Web), included via the 
-[`libcompono` 
+content by exploiting a set of (native) [web 
+components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), 
+included via the [`libcompono` 
 library](https://gitlab.com/digital-dasein/software/html-presentations/libcompono).
 
 ## Quick start
@@ -228,6 +229,7 @@ components](https://gitlab.com/digital-dasein/software/html-presentations/libcom
 - [dd-titlepage](https://digital-dasein.gitlab.io/software/html-presentations/dd-titlepage/docs/classes/DdTitlepage.html)
 - [dd-slide](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide/docs/classes/DdSlide.html)
 - [dd-slide-collection](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide-collection/docs/classes/DdSlideCollection.html)
+
 TODO: `dd-code` component
 
 ## Examples
@@ -351,3 +353,21 @@ As such, the Shower core can **extend** the basic `compono` components, which
 aim to merely possess a limited (yet practical) set of functionalities.
 
 Big thanks to all the Shower contributors!
+
+## Licenses
+
+(See also file headers and [REUSE 
+status](https://api.reuse.software/info/github.com/digitaldasein/compono))
+
+In summary, the available [licenses](./LICENSES) are applied to the following 
+software:
+- <b>MIT</b>: `compono` utility,
+  [`libcompono`](https://gitlab.com/digital-dasein/software/html-presentations/libcompono),
+  all `dd-components`, [shower presentation 
+  core](https://github.com/shower/core/)
+- <b>Apache-2.0</b>: Google's [Roboto 
+  Font](https://en.wikipedia.org/wiki/Roboto)
+- <b>BSD-3-Clause:</b>: All `dd-components` use the [lit 
+  library](https://lit.dev/docs/), which is licensed under BSD-3-Clause. Hence, 
+  the production-ready build of the `libcompono` library&mdash;used in the 
+  [examples](./examples)&mdash;adopts these for the `lit` portion of the code.
