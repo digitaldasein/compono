@@ -42,7 +42,9 @@ const DIR_LIB:&str = "./lib";
 const DIR_STYLES:&str = "./styles";
 
 const LIBCOMPONO_FNAME_OUT:&str = "libcompono.js";
-const LIBCOMPONO_STR:&str = include_str!("../lib/libcompono/dist/libcompono.min.js");
+
+const LIBCOMPONO_STR:&str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"),
+        "/lib/libcompono/dist/libcompono.min.js"));
 
 const SHOWER_FNAME_OUT_JS:&str = "shower.js";
 const SHOWER_STR_JS:&str = include_str!("../lib/libcompono/examples/shower/lib/shower/core/dist/shower.js");
