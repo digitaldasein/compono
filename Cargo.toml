@@ -26,6 +26,10 @@ tar = "0.4.38"
 rpassword = "7.0"
 chrono = "0.4.22"
 
+[dev-dependencies]
+assert_cmd = "2.0"
+tempfile = "3"
+
 # optimize for binary size rather than speed and debugging
 # <https://stackoverflow.com/a/54842093>
 [profile.release]

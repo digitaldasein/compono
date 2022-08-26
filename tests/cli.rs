@@ -7,30 +7,30 @@
 use assert_cmd::prelude::*; // Add methods on commands
 use predicates::prelude::*; // Used for writing assertions
 use std::process::Command; // Run programs
+use tempfile::tempdir;
 
 #[test]
-fn file_doesnt_exist() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("grrs")?;
+fn odir_does_not_exist() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("compono")?;
 
-    cmd.arg("foobar").arg("test/file/doesnt/exist");
+    cmd.arg("create").arg("-o /does/not/exists");
     cmd.assert()
-        .failure()
-        .stderr(predicate::str::contains("could not read file"));
+        .stdout(predicate::str::contains("directory"))
+        .stdout(predicate::str::contains("does not exist"));
 
     Ok(())
 }
 
-use assert_fs::prelude::*;
-
 #[test]
-fn find_content_in_file() -> Result<(), Box<dyn std::error::Error>> {
-    let file = assert_fs::NamedTempFile::new("sample.txt")?;
-    file.write_str("A test\nActual content\nMore content\nAnother test")?;
+fn create_minimal_presentation() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("compono")?;
 
-    let mut cmd = Command::cargo_bin("grrs")?;
-    cmd.arg("test").arg(file.path());
+    // Create a directory inside of `std::env::temp_dir()`.
+    let temp_dir = tempdir().unwrap();
+
+    cmd.arg("create").arg("-o").arg(temp_dir.path().to_str().unwrap());
     cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("test\nAnother test"));
+        .stdout(predicate::str::contains("Successfully created new presentation"));
+
     Ok(())
 }
