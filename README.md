@@ -14,6 +14,10 @@ SPDX-License-Identifier: MIT
 
 # Compono
 
+![build](https://github.com/digitaldasein/compono/actions/workflows/build.yml/badge.svg)
+
+![tests](https://github.com/digitaldasein/compono/actions/workflows/test.yml/badge.svg)
+
 [![REUSE 
 status](https://api.reuse.software/badge/github.com/digitaldasein/compono)](https://api.reuse.software/info/github.com/digitaldasein/compono)
 
