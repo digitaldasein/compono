@@ -16,13 +16,13 @@ jobs:
         toolchain:
           - stable
     steps:
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
       - uses: actions/checkout@v3
-      - run: |
-          ls -la
-          cd ./src/
-          ls -la
-          cd ../lib
-          ls -la
-      #- run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      #- run: cargo build --verbose
-      #- run: cargo test --verbose
+      - run: git submodule update --init --recursive --remote --merge
+      - run: cd lib/libcompono && yarn install && yarn build && yarn build:shower && cd ../..
+      - run: cd lib/mathajx && yarn install && cd ../../
+      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      - run: cargo build --verbose
+      - run: cargo test --verbose
