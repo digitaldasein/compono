@@ -4,7 +4,7 @@ on:
   push:
   pull_request:
 
-env: 
+env:
   CARGO_TERM_COLOR: always
 
 jobs:
@@ -17,7 +17,12 @@ jobs:
           - stable
     steps:
       - uses: actions/checkout@v3
-      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - run: cargo build --verbose
-      - run: cargo test --verbose
-  
+      - |
+          ls -la
+          cd ./src/
+          ls -la
+          cd ../lib
+          ls -la
+      #- run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      #- run: cargo build --verbose
+      #- run: cargo test --verbose
