@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2022 Digital Dasein <https://digital-dasein.gitlab.io/>
+SPDX-FileCopyrightText: 2022 Digital Dasein <https://digitaldasein.org/>
 SPDX-FileCopyrightText: 2022 Senne Van Baelen <senne@digitaldasein.org>
 SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
 
@@ -24,7 +24,7 @@ and **archiving** component-based **HTML presentations**.  Quickly develop
 content by exploiting a set of (native) [web 
 components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), 
 included via the [`libcompono` 
-library](https://gitlab.com/digital-dasein/software/html-presentations/libcompono).
+library](https://github.com/digitaldasein/libcompono).
 
 ## Quick start
 
@@ -224,15 +224,14 @@ OPTIONS:
 ### Custom HTML elements
 
 Check out documentation for all [included web 
-components](https://gitlab.com/digital-dasein/software/html-presentations/libcompono):
+components](https://github.com/digitaldasein/libcompono):
 
-- [dd-grid](https://digital-dasein.gitlab.io/software/html-presentations/dd-grid/docs/classes/DdGrid.html)
-- [dd-footer](https://digital-dasein.gitlab.io/software/html-presentations/dd-footer/docs/classes/DdFooter.html)
-- [dd-titlepage](https://digital-dasein.gitlab.io/software/html-presentations/dd-titlepage/docs/classes/DdTitlepage.html)
-- [dd-slide](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide/docs/classes/DdSlide.html)
-- [dd-slide-collection](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide-collection/docs/classes/DdSlideCollection.html)
-
-TODO: `dd-code` component
+- [dd-grid](https://digitaldasein.github.io/dd-grid/docs/classes/DdGrid.html)
+- [dd-code](https://digitaldasein.github.io/dd-code/docs/classes/DdCode.html)
+- [dd-footer](https://digitaldasein.github.io/dd-footer/docs/classes/DdFooter.html)
+- [dd-titlepage](https://digitaldasein.github.io/dd-titlepage/docs/classes/DdTitlepage.html)
+- [dd-slide](https://digitaldasein.github.io/dd-slide/docs/classes/DdSlide.html)
+- [dd-slide-collection](https://digitaldasein.github.io/dd-slide-collection/docs/classes/DdSlideCollection.html)
 
 ## Examples
 
@@ -341,10 +340,11 @@ cd utils && cargo run
 ## Attribution
 
 ### [Shower](https://github.com/shower/shower)
-[`libcompono`](https://gitlab.com/digital-dasein/software/html-presentations/libcompono) 
-is heavily inspired by the [Shower presentation 
-engine](https://github.com/shower/shower). The 
-[`dd-slide-collection`](https://digital-dasein.gitlab.io/software/html-presentations/dd-slide-collection/docs/classes/DdSlideCollection.html) 
+[`libcompono`](https://github.com/digitaldasein/libcompono) is heavily inspired 
+by the [Shower presentation 
+engine](https:/https://github.com/digitaldasein/libcompono/github.com/shower/shower). 
+The 
+[`dd-slide-collection`](https://digitaldasein.github.io/dd-slide-collection/docs/classes/DdSlideCollection.html) 
 component in particular adopted several features and styles from Shower.
 
 Even more so, `libcompono` is **fully compatible** with the [shower 
@@ -364,7 +364,7 @@ status](https://api.reuse.software/info/github.com/digitaldasein/compono))
 In summary, the available [licenses](./LICENSES) are applied to the following 
 software:
 - <b>MIT</b>: `compono` utility,
-  [`libcompono`](https://gitlab.com/digital-dasein/software/html-presentations/libcompono),
+  [`libcompono`](https://github.com/digitaldasein/libcompono),
   all `dd-components`, [shower presentation 
   core](https://github.com/shower/core/)
 - <b>Apache-2.0</b>: Google's [Roboto 

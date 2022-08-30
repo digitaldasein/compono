@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2022 Digital Dasein <https://digital-dasein.gitlab.io/>
+ * SPDX-FileCopyrightText: 2022 Digital Dasein <https://digitaldasein.org/>
  * SPDX-FileCopyrightText: 2022 Senne Van Baelen <senne@digitaldasein.org>
  * SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
  *
@@ -98,6 +98,17 @@ dd-slide-collection {
    --dd-footer-font-size:     14px;
    --dd-footer-bottom:        var(--progress-height, 0em);
    --dd-footer-color-bg:      "";
+
+   /* code */
+   --dd-code-color-hl:          rgba(251, 247, 25, 0.8);
+   --dd-code-line-height:       1.2em;
+   --dd-code-font-size:         0.75em;
+   --dd-code-padding:           1em;
+   --dd-code-margin:            0.5em 0 0.5em 0;
+   --dd-code-padding-line-nr:   1.5em;
+   --dd-code-color-bg:          #f3f3f3;
+   --dd-code-color-fg:          black; 
+   --dd-code-color-lang:        rgba(0,0,0,0.6);
 
    /* grid */
    --dd-gridspace-row: 10px;

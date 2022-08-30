@@ -73,6 +73,29 @@
       </dd-slide>
 
       <dd-slide>
+        <h2>A piece of <code>dd-code</code></h2>
+        <dd-code hl=1 bold=2 italic=3-5>
+          a highlighted line
+              A bold line
+                  and a range of italic lines
+                  and a range of italic lines
+                  and a range of italic lines
+        </dd-code>
+
+        Or use "!" in front of code to add markup, like this:
+
+        <dd-code line-nrs lang=Javascript>
+          !const contentLoaded = (callback) => {
+          !!!    if (document.currentScript.async) {
+          !        callback();
+          !!    } else {
+                  document.addEventListener('DOMContentLoaded', callback);
+              }
+          };
+        </dd-code>
+      </dd-slide>
+
+      <dd-slide>
         <h2>Incremental slides segments (requires shower backend)</h2>
         <ul>
           <li>A list item</li>

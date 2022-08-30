@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 Digital Dasein <https://digital-dasein.gitlab.io/>
+// SPDX-FileCopyrightText: 2022 Digital Dasein <https://digitaldasein.org/>
 // SPDX-FileCopyrightText: 2022 Senne Van Baelen <senne@digitaldasein.org>
 // SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
 //
@@ -9,11 +9,12 @@
  *
  * This file aims to stay up-to-date with the built-in defaults of
  * the various components, defined in separate projects:
- *   - https://gitlab.com/digital-dasein/software/html-presentations/dd-slide-collection
- *   - https://gitlab.com/digital-dasein/software/html-presentations/dd-slide
- *   - https://gitlab.com/digital-dasein/software/html-presentations/dd-titlepage
- *   - https://gitlab.com/digital-dasein/software/html-presentations/dd-footer
- *   - https://gitlab.com/digital-dasein/software/html-presentations/dd-grid
+ *   - https://github.com/digitaldasein/dd-slide-collection
+ *   - https://github.com/digitaldasein/dd-slide
+ *   - https://github.com/digitaldasein/dd-titlepage
+ *   - https://github.com/digitaldasein/dd-footer
+ *   - https://github.com/digitaldasein/dd-grid
+ *   - https://github.com/digitaldasein/dd-code
  *
  * These variables can be set on any parent element (e.g.: `:root` up until
  * `dd-slide-collection`), or on the associated custom HTML elements themselves
@@ -98,6 +99,17 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    /* Grid */
 {indent}    --dd-gridspace-row:               10px;
 {indent}    --dd-gridspace-col:               10px;
+
+{indent}    /* Code */
+{indent}    --dd-code-color-hl:               rgba(251, 247, 25, 0.8);
+{indent}    --dd-code-line-height:            1.2em;
+{indent}    --dd-code-font-size:              0.75em;
+{indent}    --dd-code-padding:                1em;
+{indent}    --dd-code-margin:                 0.5em 0 0.5em 0;
+{indent}    --dd-code-padding-line-nr:        1.5em;
+{indent}    --dd-code-color-bg:               #f3f3f3;
+{indent}    --dd-code-color-fg:               black;
+{indent}    --dd-code-color-lang:             rgba(0,0,0,0.6);
 {indent}}}{suffix}"#,
     prefix=prefix, indent=indent, suffix=suffix)
 }
