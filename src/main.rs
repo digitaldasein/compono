@@ -5,8 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 // TODO:
-// - add templates
-// - write tests
+// - write more tests
 
 use std::io::{self, Write, Seek, stdin, stdout, BufReader, prelude::*};
 use std::path::Path;
