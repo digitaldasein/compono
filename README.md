@@ -59,9 +59,9 @@ here](https://digitaldasein.github.io/compono/example-dd-basic/).
 - Built-in, *customisable* **web components**,  **stylesheets** and **HTML 
   templates**
 - Automatically publish your presentation to **Gitlab**, **Github**, or to a 
-  **remote server**.
+  **remote server**
 - **Archive** and **compress** your presentation to a `.tar.gz`- or 
-  `.zip`-file.
+  `.zip`-file
 
 ## Docs
 
