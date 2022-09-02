@@ -14,6 +14,7 @@
  * ==========
  * - CSS VARIABLES
  * - GENERAL
+ * - LINKS
  * - LISTS
  *
  * List of available classes:
@@ -43,6 +44,7 @@ dd-slide-collection {
    --dd-color-caption-bg:  var(--dd-color-prim-dark);
    --dd-color-caption-fg:  var(--dd-text-color-light);
    --dd-color-heading:     var(--dd-color-prim-dark);
+   --dd-color-caption-link:inherit;
 
    --dd-slide-gap:         96px;
    --dd-slide-ratio:       calc(16/9);
@@ -88,6 +90,7 @@ dd-slide-collection {
    --dd-titlepage-color-bg-mid:      var(--dd-color-prim);
    --dd-titlepage-color-fg-bot:      var(--dd-color-text);
    --dd-titlepage-color-bg-bot:      var(--dd-color-sec);
+   --dd-titlepage-color-link:        inherit;
 
    /* Footer */
    --dd-footer-height:        30px;
@@ -98,6 +101,17 @@ dd-slide-collection {
    --dd-footer-font-size:     14px;
    --dd-footer-bottom:        var(--progress-height, 0em);
    --dd-footer-color-bg:      "";
+
+   /* code */
+   --dd-code-color-hl:          rgba(251, 247, 25, 0.8);
+   --dd-code-line-height:       1.2em;
+   --dd-code-font-size:         0.75em;
+   --dd-code-padding:           1em;
+   --dd-code-margin:            0.5em 0 0.5em 0;
+   --dd-code-padding-line-nr:   1.5em;
+   --dd-code-color-bg:          #f3f3f3;
+   --dd-code-color-fg:          black;
+   --dd-code-color-lang:        rgba(0,0,0,0.6);
 
    /* grid */
    --dd-gridspace-row: 10px;
@@ -111,6 +125,16 @@ dd-slide-collection {
 p, ul, ol, div {
     line-height:1.65em;
 }
+
+/* ========== */
+/* LINKS      */
+/* ========== */
+
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    color:inherit;
+}
+
+
 
 /* ========== */
 /* LISTS      */

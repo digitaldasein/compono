@@ -44,6 +44,7 @@ dd-slide-collection {
    --dd-color-caption-bg:  var(--dd-color-prim-dark);
    --dd-color-caption-fg:  var(--dd-text-color-light);
    --dd-color-heading:     var(--dd-color-prim-dark);
+   --dd-color-caption-link:inherit;
 
    --dd-slide-gap:         96px;
    --dd-slide-ratio:       calc(16/9);

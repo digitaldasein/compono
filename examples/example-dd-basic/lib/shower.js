@@ -382,7 +382,6 @@
                 step.classList.toggle(activeSlideClass, index === activeIndex);
             });
 
-            // console.log(shower.activeSlide.id);
             if (activeIndex < innerSteps.length) {
                 event.preventDefault();
             }

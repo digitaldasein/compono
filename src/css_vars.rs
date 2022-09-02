@@ -37,6 +37,7 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    /*--dd-color-text:                ;*/
 {indent}    /*--dd-color-text-light:          ;*/
 
+{indent}    --dd-color-caption-link:          inherit;
 {indent}    /*--dd-color-caption-bg:          var(--dd-color-prim-dark);*/
 {indent}    /*--dd-color-caption-fg:          var(--dd-color-text-light);*/
 {indent}    /*--dd-color-heading:             var(--dd-color-prim-dark);*/

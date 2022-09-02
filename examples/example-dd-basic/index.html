@@ -18,10 +18,11 @@
   </head>
   <body class="shower">
     <dd-slide-collection main-title="Full presentation template"
-                         sub-title="Contains several examples on how to exploit <code>dd-components</code>"
+                         sub-title="Contains several examples on how to exploit
+                                    <code><a href='https://github.com/digitaldasein/compono#custom-web-components'>dd-components</a></code>"
                          author="Senne Van Baelen, Gerben Peeters"
                          organisation="Digital Dasein"
-                         organisation-url=""
+                         organisation-url="https://digitaldasein.org"
                          date="2022-08-22"
                          url=""
                          img-src="img/logo.svg"
@@ -32,7 +33,7 @@
       <!--remove auto-injected left image from footer by outcommenting next line-->
       <!--<dd-footer img-left=""></dd-footer>-->
       <dd-titlepage></dd-titlepage>
-      <dd-titlepage main-title="A tilepage with centered content"
+      <dd-titlepage main-title="A <a href='https://digitaldasein.github.io/dd-titlepage/docs/classes/DdTitlepage.html'><code>dd-titlepage</code></a> with centered content"
                     sub-title="Note we could also center <i>only</i> text or image"
                     html-bot-left="<b>custom HTML</b> on the <i>bottom </i> (left column defaults to 100% width)"
                     center>
@@ -77,9 +78,32 @@
           <li>So let's add another one</li>
         </ol>
 
-        <p>By default, HTML does not compute nested subsection numbers (e.g. 2.1, 2.2). The built-in themes `dd-basic` have classes to overcome
-        this.
+        <p>
+        Default HTML lists do not have nested subsection numbers (e.g. 2.1, 2.2). The built-in CSS sheet `dd-basic` (among others) <i>does</i> allow nesting.
         </p>
+      </dd-slide>
+
+      <dd-slide>
+        <h2>A piece of <code><a href="https://digitaldasein.github.io/dd-code/docs/classes/DdCode.html">dd-code</a></code></h2>
+        <dd-code hl=1 bold=2 italic=3-5>
+          a highlighted line
+              A bold line
+                  and a range of italic lines
+                  and a range of italic lines
+                  and a range of italic lines
+        </dd-code>
+
+        Or use "!" in front of code to add markup, like this:
+
+        <dd-code line-nrs lang=Javascript>
+          !const contentLoaded = (callback) => {
+          !!!    if (document.currentScript.async) {
+          !        callback();
+          !!    } else {
+                  document.addEventListener('DOMContentLoaded', callback);
+              }
+          };
+        </dd-code>
       </dd-slide>
 
       <dd-slide>
@@ -95,7 +119,7 @@
       </dd-slide>
 
       <dd-slide no-footer>
-        <h2>this slide has no footer</h2>
+        <h2>this slide has no <a href="https://digitaldasein.github.io/dd-footer/docs/classes/DdFooter.html">footer</a></h2>
         <p>Using the <code>no-footer</code> attribute in <code>dd-slide</code></p>
       </dd-slide>
 
@@ -119,17 +143,17 @@
                  style="padding-top:10px;"
                  slot-style="border: 1px solid black">
           <div slot=1>
-            <video controls width="100%" autoplay muted>
+            <video controls width="100%" autoplay muted loop>
               <source src="videos/sample.mp4" type="video/mp4">
             </video>
           </div>
          <div slot=2>
-           <video controls autoplay muted>
+           <video controls autoplay muted loop>
              <source src="videos/sample.mp4" type="video/mp4">
            </video>
           </div>
           <div slot=3>
-            <video controls width="100%" autoplay muted>
+            <video controls width="100%" autoplay muted loop>
               <source src="videos/sample.mp4" type="video/mp4">
             </video>
           </div>
@@ -144,7 +168,8 @@
       </dd-slide>
 
       <dd-slide dim="50 50; 50 50;" center>
-        <h2>Use <code>dim</code> attribute from <code>dd-slide</code> as 2x2 grid</h2>
+        <h2>Use <code>dim</code> attribute from <code><a href="https://digitaldasein.github.io/dd-slide/docs/classes/DdSlide.html">dd-slide</a></code>
+          for slide-wide grids</h2>
         <div slot="1">
           slot 1 (slide-content is centered)
         </div>
@@ -159,39 +184,18 @@
         </div>
       </dd-slide>
 
-      <!--[>============================================================ <]-->
-      <!--<section class="slide">[> SLIDE 7 [[[ <]-->
-        <!--<h2>Always be consistent with images (aligning, ...)</h2>-->
-        <!--<ul>-->
-          <!--<li><b>It's just much more efficient!</b> (-->
-            <!--<code style="font-size:0.7em;"> e.g.: parent divs + padding + 100% width-->
-            <!--</code>:-->
-            <!--simple!)</li>-->
-          <!--<li>images and grids go hand in hand!</li>-->
-          <!--<li>snippet of right column in previous slide:-->
-            <!--<pre>-->
-          <!--<code style="font-size:0.45em;margin-top:-20px;">-->
-    <!--&lt;div style="padding:0 0 0 0;"&gt;-->
-      <!--&lt;div style="padding:0px 10px 0 10px;"&gt;-->
-        <!--&lt;img width="100%" src="figures/logo_kul.svg"&gt;-->
-        <!--&lt;div class="img-caption"&gt;-->
-          <!--&lt;span&gt;&lt;b&gt;Fig. &lt;/b&gt;: KUL logo&lt;/span&gt;-->
-        <!--&lt;/div&gt;-->
-      <!--&lt;/div&gt;&lt;!--end image--&gt;-->
-      <!--&lt;div style="padding:40px 10px 0 10px;"&gt;-->
-        <!--&lt;img width="100%" src="figures/cogge_comp.png"&gt;-->
-        <!--&lt;div class="img-caption"&gt;-->
-          <!--&lt;span&gt;&lt;b&gt;Fig. &lt;/b&gt;: some other figure&lt;/span&gt;-->
-        <!--&lt;/div&gt;-->
-      <!--&lt;/div&gt;&lt;!--end image--&gt;-->
-    <!--&lt;/div&gt;&lt;!--end grid column--&gt;-->
-          <!--</code>-->
-            <!--</pre>-->
-          <!--</li>-->
-        <!--</ul>-->
-        <!--<my-footer></my-footer>-->
-      <!--</section>[> SLIDE ]]] <]-->
-      <!--============================================================ -->
+      <dd-slide>
+        <!-- note when using `class="slide"` in a dd-code snippet, you need to escape the < and > characters, and set language to HTML -->
+        <h2>No need to use <code>dd-slide</code></h2>
+        You can also have a native HTML <code>section</code> like this:
+        <dd-code bold=3 lang=HTML>
+          &lt;section class="slide"&gt;
+            My slide content, which will
+            not
+            have any built-in style
+          &lt;/section&gt;
+        </dd-code>
+      </dd-slide>
 
       <dd-slide>
         <h2>Math (requires <code>--mathjax</code> option)</h2>
