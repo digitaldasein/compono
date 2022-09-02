@@ -85,6 +85,7 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-titlepage-color-bg-mid:      var(--dd-color-prim);
 {indent}    --dd-titlepage-color-fg-bot:      var(--dd-color-text);
 {indent}    --dd-titlepage-color-bg-bot:      var(--dd-color-sec);
+{indent}    --dd-titlepage-color-link:        inherit;
 
 {indent}    /* Footer */
 {indent}    --dd-footer-height:               30px;

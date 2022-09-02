@@ -14,6 +14,7 @@
  * ==========
  * - CSS VARIABLES
  * - GENERAL
+ * - LINKS
  * - LISTS
  *
  * List of available classes:
@@ -88,6 +89,7 @@ dd-slide-collection {
    --dd-titlepage-color-bg-mid:      var(--dd-color-prim);
    --dd-titlepage-color-fg-bot:      var(--dd-color-text);
    --dd-titlepage-color-bg-bot:      var(--dd-color-sec);
+   --dd-titlepage-color-link:        inherit;
 
    /* Footer */
    --dd-footer-height:        30px;
@@ -107,7 +109,7 @@ dd-slide-collection {
    --dd-code-margin:            0.5em 0 0.5em 0;
    --dd-code-padding-line-nr:   1.5em;
    --dd-code-color-bg:          #f3f3f3;
-   --dd-code-color-fg:          black; 
+   --dd-code-color-fg:          black;
    --dd-code-color-lang:        rgba(0,0,0,0.6);
 
    /* grid */
@@ -122,6 +124,16 @@ dd-slide-collection {
 p, ul, ol, div {
     line-height:1.65em;
 }
+
+/* ========== */
+/* LINKS      */
+/* ========== */
+
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a {
+    color:inherit;
+}
+
+
 
 /* ========== */
 /* LISTS      */

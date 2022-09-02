@@ -54,9 +54,10 @@ here](https://digitaldasein.github.io/compono/example-dd-basic/).
 ## Features
 
 - Batteries included: a **single (*static*) binary** (~5MB)
-- Generates an <b>all-local</b> HTML presentation base
-- Built-in, customisable **stylesheets** and **HTML templates** for 
-  seamless initialisation
+- Generates an <b>all-local</b> HTML presentation base, no internet connection 
+  required!
+- Built-in, *customisable* **web components**,  **stylesheets** and **HTML 
+  templates**
 - Automatically publish your presentation to **Gitlab**, **Github**, or to a 
   **remote server**.
 - **Archive** and **compress** your presentation to a `.tar.gz`- or 
@@ -67,7 +68,7 @@ here](https://digitaldasein.github.io/compono/example-dd-basic/).
 - [Creating a presentation](#create)
 - [Publishing a presentation](#publish)
 - [Archiving a presentation](#archive)
-- [Custom HTML elements](#custom-html-elements)
+- [Custom web components](#custom-web-components)
 
 ### Available options and subcommands
 
@@ -221,7 +222,7 @@ OPTIONS:
             Print version information
 ```
 
-### Custom HTML elements
+### Custom web components
 
 Check out documentation for all [included web 
 components](https://github.com/digitaldasein/libcompono):
