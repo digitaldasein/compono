@@ -54,7 +54,9 @@ dd-slide-collection {
    --dd-font:              24px/2 'Roboto', sans-serif;
    --dd-font-size:         24px;
    --dd-caption-height:    250px;
+}
 
+dd-slide {
    /* Slide */
    --dd-slide-gridspace-row:  10px;
    --dd-slide-gridspace-col:  10px;
@@ -66,7 +68,10 @@ dd-slide-collection {
    --dd-slide-pad-top-content:0px;
    --dd-slide-pad-left:       25px;
    --dd-slide-pad-right:      25px;
+}
 
+
+dd-titlepage {
    /* Titlepage */
    --dd-titlepage-padding-side:      50px;
    --dd-titlepage-padding-top-top:   10px;
@@ -91,7 +96,10 @@ dd-slide-collection {
    --dd-titlepage-color-fg-bot:      var(--dd-color-text);
    --dd-titlepage-color-bg-bot:      var(--dd-color-sec);
    --dd-titlepage-color-link:        inherit;
+}
 
+
+dd-footer {
    /* Footer */
    --dd-footer-height:        30px;
    --dd-footer-img-height:    var(--dd-footer-height);
@@ -101,7 +109,9 @@ dd-slide-collection {
    --dd-footer-font-size:     14px;
    --dd-footer-bottom:        var(--progress-height, 0em);
    --dd-footer-color-bg:      "";
+}
 
+dd-code {
    /* code */
    --dd-code-color-hl:          rgba(251, 247, 25, 0.8);
    --dd-code-line-height:       1.2em;
@@ -112,11 +122,14 @@ dd-slide-collection {
    --dd-code-color-bg:          #f3f3f3;
    --dd-code-color-fg:          black;
    --dd-code-color-lang:        rgba(0,0,0,0.6);
-
-   /* grid */
-   --dd-gridspace-row: 10px;
-   --dd-gridspace-col: 10px;
 }
+
+
+dd-grid {
+    /* grid */
+    --dd-gridspace-row: 10px;
+    --dd-gridspace-col: 10px;
+}  
 
 /* ========== */
 /* GENERAL    */

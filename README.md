@@ -316,20 +316,27 @@ cd lib/libcompono && yarn build:shower
 #### Install MathJax
 
 ```sh
-cd lib/mathajx && yarn install
+cd lib/mathjax && yarn install
 ```
 
 ### Compono crate (Rust)
 
-Run program:
+**Run program:**
+
 ```
 cargo run -- <subcommand> [OPTIONS]
 ```
 
-Build:
+**Build:**
 
 ```sh
 cargo build
+```
+
+**Install**:
+
+```sh
+cargo install --path .
 ```
 
 ### Run utils (optional)

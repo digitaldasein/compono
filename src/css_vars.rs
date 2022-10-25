@@ -54,16 +54,20 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-font:                        24px/2 'Roboto', sans-serif;
 {indent}    --dd-font-size:                   24px;
 {indent}    --dd-caption-height:              250px;
+{indent}}}
 
-{indent}    /* Slide */
+{indent}/* Slide */
+{indent}dd-slide {{
 {indent}    --dd-slide-gridspace-row:         10px;
 {indent}    --dd-slide-gridspace-col:         10px;
 {indent}    --dd-slide-nr-font-size:          16px;
 {indent}    --dd-slide-nr-color:              var(--dd-color-text);
 {indent}    --dd-slide-nr-right:              13px;
 {indent}    --dd-slide-nr-bottom:             var(--dd-footer-bottom);
+{indent}}}
 
-{indent}    /* Titlepage */
+{indent}/* Titlepage */
+{indent}dd-titlepage {{
 {indent}    --dd-titlepage-padding-side:      50px;
 {indent}    --dd-titlepage-padding-top-top:   10px;
 {indent}    --dd-titlepage-padding-mid-top:   100px;
@@ -87,8 +91,10 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-titlepage-color-fg-bot:      var(--dd-color-text);
 {indent}    --dd-titlepage-color-bg-bot:      var(--dd-color-sec);
 {indent}    --dd-titlepage-color-link:        inherit;
+{indent}}}
 
-{indent}    /* Footer */
+{indent}/* Footer */
+{indent}dd-footer {{
 {indent}    --dd-footer-height:               30px;
 {indent}    --dd-footer-img-height:           var(--dd-footer-height);
 {indent}    --dd-footer-padding-side:         0px;
@@ -97,12 +103,16 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-footer-font-size:            14px;
 {indent}    --dd-footer-bottom:               var(--progress-height, 0em);
 {indent}    --dd-footer-color-bg:             ;
+{indent}}}
 
-{indent}    /* Grid */
+{indent}/* Grid */
+{indent}dd-grid {{
 {indent}    --dd-gridspace-row:               10px;
 {indent}    --dd-gridspace-col:               10px;
+{indent}}}
 
-{indent}    /* Code */
+{indent}/* Code */
+{indent}dd-code {{
 {indent}    --dd-code-color-hl:               rgba(251, 247, 25, 0.8);
 {indent}    --dd-code-line-height:            1.2em;
 {indent}    --dd-code-font-size:              0.75em;
@@ -112,6 +122,7 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-code-color-bg:               #f3f3f3;
 {indent}    --dd-code-color-fg:               black;
 {indent}    --dd-code-color-lang:             rgba(0,0,0,0.6);
+{indent}}}
 {indent}}}{suffix}"#,
     prefix=prefix, indent=indent, suffix=suffix)
 }
