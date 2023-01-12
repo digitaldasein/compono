@@ -33,10 +33,10 @@
  *
  * */
 dd-slide-collection {
-   --dd-color-prim:        rgba(153, 155, 132, 1);
-   --dd-color-prim-dark:   rgba(65, 90, 72, 1);
-   --dd-color-sec:         rgba(248, 237, 227, 1);
-   --dd-color-sec-dark:    rgba(238, 254, 216, 1);
+   --dd-color-prim:        rgba(29,141,176,1);
+   --dd-color-prim-dark:   rgba(0,64,122, 1);;
+   --dd-color-sec:         rgba(82,189,236, 0.3);
+   --dd-color-sec-dark:    rgba(0,64,122, 1);
    --dd-color-list-bg:     rgba(248, 237, 227, 0.5);
    --dd-color-text:        rgba(0, 0, 0, 0.9);
    --dd-color-text-light:  rgba(255, 255, 255, 1);

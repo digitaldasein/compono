@@ -13,7 +13,9 @@ use std::fs;
 use std::env;
 use std::process;
 use std::iter::Iterator;
+use std::collections::HashMap;
 use chrono::Datelike;
+use itertools::Itertools;
 
 use std::net::TcpStream;
 use clap::{Parser, ArgEnum, Subcommand};
@@ -65,7 +67,6 @@ const SHOWER_FONT_R:&[u8] = include_bytes!("./styles/fonts/roboto-regular.woff2"
 const SHOWER_PROGRESS_HTML:&str = r#"<div class="progress"></div>"#;
 
 const HTML_MINIMAL:&str = include_str!("./templates/minimal.html");
-const HTML_MINIMAL_VIM:&str = include_str!("./templates/minimal_vim.html");
 const HTML_CSS_VARS:&str = include_str!("./templates/css_vars.html");
 const HTML_EXAMPLE:&str = include_str!("./templates/example.html");
 
@@ -129,15 +130,15 @@ enum Commands {
         #[clap(short='p', long, value_parser)]
         template_path: Option<std::path::PathBuf>,
 
-        /// filename HTML output
-        #[clap(short, long, value_parser)]
-        filename: Option<std::path::PathBuf>,
+        /*/// filename HTML output (defaults to "index.html")*/
+        /*#[clap(short, long, value_parser)]*/
+        /*filename: Option<std::path::PathBuf>,*/
 
         /// Output directory path
         #[clap(short, long, value_parser, default_value=CREATE_OUTPUT_DIR_STR)]
         output_dir: std::path::PathBuf,
 
-        /// Theme (CSS styles).
+        /// Theme (Built-in CSS styles).
         /// For a custom css path, see the `--css-path` option.
         #[clap(short='t', long, value_parser, arg_enum,
                default_value_t = Stylesheet::None)
@@ -159,7 +160,40 @@ enum Commands {
         /// Do not inline font binaries in CSS (applicable to most themes)
         #[clap(short, long, action)]
         no_inline_fonts: bool,
+
+        /// Path to local input directory with ./templates, ./styles, etc. This
+        /// will initiate a user promt
+        #[clap(short='i', long, value_parser)]
+        input_directory: Option<std::path::PathBuf>,
     },
+
+    /// Update stylesheets and libraries based
+    #[clap(visible_aliases = &["add"]) ]
+    Update {
+        /// Path to presentation directory
+        #[clap(short, long, value_parser, default_value="./")]
+        input_dir: std::path::PathBuf,
+
+        /// Theme (Built-in CSS styles).
+        /// For a custom css path, see the `--css-path` option.
+        #[clap(short='t', long, value_parser, arg_enum,
+               default_value_t = Stylesheet::None)
+        ]
+        theme: Stylesheet,
+
+        /// Path to custom CSS stylesheet.
+        #[clap(short='c', long, value_parser)]
+        css_path: Option<std::path::PathBuf>,
+
+        /// Include shower presentation javascript core
+        #[clap(short, long, action)]
+        shower: bool,
+
+        /// Include mathjax engine for rendering math (LaTeX-like)
+        #[clap(short, long, action)]
+        mathjax: bool,
+    },
+
 
     /// Publish HTML presentation
     #[clap(visible_aliases = &["pub"]) ]
@@ -238,7 +272,6 @@ enum Commands {
 #[derive(Clone, ArgEnum, Debug)]
 enum Template {
     Minimal,
-    MinimalVim,
     CssVars,
     Example,
     ExampleCssVars,
@@ -370,10 +403,101 @@ Create it? ([n]/y): ", output_dir.display());
             process::exit(1);
         }
     }
-
     Ok(())
 }
 
+fn inspect_input_dir(input_dir:&Path,
+                    style_fpath:&mut Option<std::path::PathBuf>,
+                    template_fpath:&mut Option<std::path::PathBuf>
+                    ) -> Result<(), std::io::Error> {
+    if !input_dir.exists(){
+        println!("The input directory `{}` does not exist.",
+                 input_dir.display());
+        println!("Exiting...");
+        process::exit(1);
+    }
+
+    let walker = WalkDir::new(input_dir).into_iter()
+        .filter_map(|e| e.ok());
+
+    //let mut v_styles_fp = Vec::<String>::new();
+    let mut hash_styles_fp = HashMap::new();
+    let mut cnt_styles:u8 = 0;
+    let mut hash_templates_fp = HashMap::new();
+    let mut cnt_templates:u8 = 0;
+
+    for entry in walker {
+        if entry.file_type().is_dir() {
+            //println!("{}", entry.path().file_name().unwrap().to_str().unwrap());
+            // styles
+            if matches!(entry.path().file_name().unwrap().to_str().unwrap(),
+                        "styles" | "themes"){
+                //println!("{}", entry.path().display());
+                let filepaths = fs::read_dir(entry.path()).unwrap();
+                for path in filepaths {
+                    hash_styles_fp.insert(
+                        cnt_styles,
+                        path.unwrap().path()
+                        );
+                    cnt_styles = cnt_styles + 1;
+                }
+            };
+            if matches!(entry.path().file_name().unwrap().to_str().unwrap(),
+                        "templates" | "tmpl" ){
+                //println!("{}", entry.path().display());
+                let filepaths = fs::read_dir(entry.path()).unwrap();
+                for path in filepaths {
+                    hash_templates_fp.insert(
+                        cnt_templates,
+                        path.unwrap().path()
+                        );
+                    cnt_templates = cnt_templates + 1;
+                }
+            };
+        }
+    }
+
+    if hash_styles_fp.keys().len() > 0 {
+        println!("=> The following stylesheets are available:");
+        for key in hash_styles_fp.keys().sorted() {
+            println!("   [{:?}] {:?}", key, hash_styles_fp[key]);
+        }
+        let style_nr:String = user_input("Select stylesheet number (or [enter] \
+to ignore): ");
+
+        if !style_nr.is_empty() {
+            *style_fpath =
+                hash_styles_fp.remove(&style_nr.parse::<u8>().unwrap());
+            if style_fpath.is_none() {
+                println!("[WARNING] this stylesheet number does not exist and \
+will be ignored");
+            }
+        }
+    } else {
+        println!("[WARNING] No stylesheets (*.css) found in input directory \
+(will be ignored)");
+    }
+    if hash_templates_fp.keys().len() > 0 {
+        println!("=> The following templates are available:");
+        for key in hash_templates_fp.keys().sorted() {
+            println!("   [{:?}] {:?}", key, hash_templates_fp[key]);
+        }
+        let template_nr:String = user_input("Select template number (or [enter] \
+to ignore): ");
+        if !template_nr.is_empty() {
+            *template_fpath =
+                hash_templates_fp.remove(&template_nr.parse::<u8>().unwrap());
+            if template_fpath.is_none() {
+                println!("[WARNING] this template number does not exist and will \
+be ignored");
+            }
+        }
+    } else {
+        println!("[WARNING] No templates (*.html) found in input directory. \
+(will be ignored)");
+    }
+    Ok(())
+}
 
 fn add_font_files(styles_dir:std::path::PathBuf)
              -> Result<(), Box<dyn std::error::Error>> {
@@ -573,6 +697,7 @@ fn include_files(input_dir:&std::path::PathBuf,
     v_files.push(html_file_str);
 
     let gitignore_file = &Path::new(input_dir).join(".gitignore");
+//const HTML_MINIMAL_VIM:&str = include_str!("./templates/minimal_vim.html");
 
     let html_string = fs::read_to_string(&html_file)
             .with_context(|| format!("Failed to read file `{}`",
@@ -880,23 +1005,17 @@ as non-root user)",
 
 fn create_presentation(template:&Template,
                        template_path:&Option<std::path::PathBuf>,
+                       input_directory: &Option<std::path::PathBuf>,
                        theme:&Stylesheet,
                        css_path:&Option<std::path::PathBuf>,
                        output_dir:&std::path::PathBuf,
-                       filename:&Option<std::path::PathBuf>,
                        shower:&bool,
                        mathjax:&bool,
                        no_inline_fonts:&bool)
                        -> Result<(), Box<dyn std::error::Error>> {
 
     // set output filename
-    let output_file = if let Some(ofile) = filename {
-        // avoid output filename reference to be shared
-        let outputfile = ofile.clone();
-        outputfile.into_os_string().into_string().unwrap()
-    } else {
-        "index.html".to_string()
-    };
+    let output_file = "index.html".to_string();
 
     // set output directory
     check_dir_and_create(output_dir)?;
@@ -916,15 +1035,47 @@ Overwrite it (y/[n])? ", output_path_html.display()));
     let styles_dir = output_dir.join(DIR_STYLES);
     let lib_dir = output_dir.join(DIR_LIB);
 
+    fs::create_dir_all(&styles_dir)?;
+    fs::create_dir_all(&lib_dir)?;
+
+    // get input stylesheets and templates (with user prompt)
+    // note that these will have priority (if selected) over other CLI args
+    let mut input_style_fpath:Option<std::path::PathBuf> = None;
+    let mut input_template_fpath:Option<std::path::PathBuf> = None;
+    let mut b_input_shower = false;
+    let mut b_input_mathjax = false;
+    if let Some(idir) = input_directory {
+        println!("========== CUSTOM INPUT FOLDER ==========");
+        inspect_input_dir(idir, &mut input_style_fpath, &mut
+                          input_template_fpath)?;
+        if !*shower {
+            let input_shower:String = user_input("=> Include shower \
+library ([N]/y): ");
+            if input_shower == "y" || input_shower == "yes" {
+                b_input_shower = true;
+            }
+        }
+        if !*mathjax {
+            let input_mj:String = user_input("=> Include mathjax \
+library ([N]/y): ");
+            if input_mj == "y" || input_mj == "yes" {
+                b_input_mathjax = true;
+            }
+        }
+    }
+
     // get html template
-    let html_template = if let Some(tpath) = template_path {
+    let html_template = if let Some(tpath) = &input_template_fpath {
+        std::fs::read_to_string(tpath)
+            .with_context(|| format!("Failed to read HTML template content \
+from `{}`", tpath.display()))?
+    } else if let Some(tpath) = template_path {
         std::fs::read_to_string(tpath)
             .with_context(|| format!("Failed to read HTML template content \
 from `{}`", tpath.display()))?
     } else {
         match template {
             Template::Minimal => HTML_MINIMAL,
-            Template::MinimalVim => HTML_MINIMAL_VIM,
             Template::CssVars => HTML_CSS_VARS,
             Template::Example | Template::ExampleCssVars => {
                 // add additional assets
@@ -946,20 +1097,27 @@ from `{}`", tpath.display()))?
     };
 
     let html_split_head_end:Vec<&str> = html_template.split("</head>").collect();
-    let html_split_body_start:Vec<&str> = html_split_head_end[1].split("<body>").collect();
-    let html_split_body_end:Vec<&str> = html_split_body_start[1].split("</body>").collect();
+    let mut s_body = "<body>";
+    if html_template.contains("<body class=\"shower\">"){
+        s_body = "<body class=\"shower\">";
+    }
+    let html_split_body_start:Vec<&str> =
+        html_split_head_end[1].split(s_body).collect();
+    let html_split_body_end:Vec<&str> =
+        html_split_body_start[1].split("</body>").collect();
 
-    let mut v_html_content:Vec<String> = Vec::from([html_split_head_end[0].to_string(),
-                                                    html_split_body_start[0].to_string(),
-                                                    html_split_body_end[0].to_string(),
-                                                    html_split_body_end[1].to_string()]);
+    let mut v_html_content:Vec<String> =
+        Vec::from([
+                  html_split_head_end[0].to_string(),
+                  html_split_body_start[0].to_string(),
+                  html_split_body_end[0].to_string(),
+                  html_split_body_end[1].to_string()]
+                 );
 
-    fs::create_dir_all(&styles_dir)?;
-    fs::create_dir_all(&lib_dir)?;
-
-    // stylesheets
-    // roboto font
-    if *shower || matches!(theme, Stylesheet::DdBasic)
+    // Stylesheets
+    // include roboto font
+    if *shower || b_input_shower
+               || matches!(theme, Stylesheet::DdBasic)
                || matches!(theme, Stylesheet::DdVars) {
 
         if *no_inline_fonts {
@@ -981,7 +1139,8 @@ from `{}`", tpath.display()))?
         }
 
     }
-    if *shower {
+    // shower lib
+    if *shower || b_input_shower {
         update_header(&mut v_html_content,
                       SHOWER_FNAME_OUT_CSS, UpdateHeaderOpt::CssLink);
         let output_path_shower_css = styles_dir.join(SHOWER_FNAME_OUT_CSS);
@@ -1016,12 +1175,26 @@ from `{}`", tpath.display()))?
             update_header(&mut v_html_content, fname, UpdateHeaderOpt::CssLink);
         }
     }
-    // custom stylesheet
-    if let Some(css_path) = css_path {
+    // custom stylesheet, giving priority to input stylesheet
+    // (can be in addition to theme)
+    if let Some(css_path) = &input_style_fpath {
         let custom_css_content = std::fs::read_to_string(css_path)
             .with_context(|| format!("Failed to read CSS stylesheet \
 from `{}`", css_path.display()))?;
+        if let Some(fname) = css_path.file_name() {
+            let output_path_css = styles_dir.join(fname);
+            fs::write(output_path_css.clone(), custom_css_content)
+                .with_context(|| format!("Failed to write file `{}`",
+                        output_path_css.display()))?;
 
+            if let Some(fname_str) = fname.to_str() {
+                update_header(&mut v_html_content, fname_str, UpdateHeaderOpt::CssLink);
+            }
+        }
+    } else if let Some(css_path) = css_path {
+        let custom_css_content = std::fs::read_to_string(css_path)
+            .with_context(|| format!("Failed to read CSS stylesheet \
+from `{}`", css_path.display()))?;
         if let Some(fname) = css_path.file_name() {
             let output_path_css = styles_dir.join(fname);
             fs::write(output_path_css.clone(), custom_css_content)
@@ -1035,7 +1208,7 @@ from `{}`", css_path.display()))?;
     }
 
     // scripts
-    if *shower {
+    if *shower || b_input_shower {
         update_header(&mut v_html_content,
                       SHOWER_FNAME_OUT_JS, UpdateHeaderOpt::JsSrc);
         update_header(&mut v_html_content,
@@ -1049,7 +1222,7 @@ from `{}`", css_path.display()))?;
         .with_context(|| format!("Failed to write file `{}`",
                 output_path_libcompono.display()))?;
 
-    if *mathjax {
+    if *mathjax || b_input_mathjax {
         update_header(&mut v_html_content,
 
                       MATHJAX_NAME_OUT, UpdateHeaderOpt::JsSrcAsync);
@@ -1072,10 +1245,9 @@ from `{}`", css_path.display()))?;
         }
     }
 
-    // update inline style (as last, to make it a prio)
+    // update inline <style></style> based on template (if provided)
     match template {
         Template::Minimal |
-        Template::MinimalVim |
         Template::Example =>
         {
             update_header(&mut v_html_content,
@@ -1092,7 +1264,7 @@ from `{}`", css_path.display()))?;
         }
     };
 
-    if *shower {
+    if *shower || b_input_shower {
         let output_path_shower_js = lib_dir.join(SHOWER_FNAME_OUT_JS);
         fs::write(output_path_shower_js.clone(), SHOWER_STR_JS)
             .with_context(|| format!("Failed to write file `{}`",
@@ -1136,6 +1308,223 @@ from `{}`", css_path.display()))?;
                                  output_path_html.display()))?;
 
     println!("Successfully created new presentation at `{}`",
+             output_path_html.display());
+
+    Ok(())
+}
+
+fn update_presentation(input_dir:&std::path::PathBuf,
+                       theme:&Stylesheet,
+                       css_path:&Option<std::path::PathBuf>,
+                       shower:&bool,
+                       mathjax:&bool)
+                       -> Result<(), Box<dyn std::error::Error>> {
+
+    check_dir_and_create(input_dir)?;
+    let html_file = "index.html".to_string();
+    let output_path_html = input_dir.join(html_file);
+
+    let styles_dir = input_dir.join(DIR_STYLES);
+    let lib_dir = input_dir.join(DIR_LIB);
+
+    fs::create_dir_all(&styles_dir)?;
+    fs::create_dir_all(&lib_dir)?;
+
+    // get html template
+    let html_template = std::fs::read_to_string(&output_path_html)
+            .with_context(|| format!("Failed to read HTML template content \
+from `{}`", output_path_html.display()))?;
+
+    let html_split_head_end:Vec<&str> = html_template.split("</head>").collect();
+
+    let mut s_body = "<body>";
+    if html_template.contains("<body class=\"shower\">"){
+        s_body = "<body class=\"shower\">";
+    }
+    let html_split_body_start:Vec<&str> =
+        html_split_head_end[1].split(s_body).collect();
+    let html_split_body_end:Vec<&str> =
+        html_split_body_start[1].split("</body>").collect();
+
+    let mut v_html_content:Vec<String> =
+        Vec::from([
+                  html_split_head_end[0].to_string(),
+                  html_split_body_start[0].to_string(),
+                  html_split_body_end[0].to_string(),
+                  html_split_body_end[1].to_string()]
+                 );
+
+    // Stylesheets
+    if *shower {
+        if html_template.contains(CSS_ROBOTO_FNAME) {
+            println!("[WARN] based on the index.html header, it seems that '{}' \
+was already added, ignoring...", CSS_ROBOTO_FNAME);
+        } else {
+            update_header(&mut v_html_content,
+                          CSS_ROBOTO_FNAME, UpdateHeaderOpt::CssLink);
+            let output_path_css = styles_dir.join(CSS_ROBOTO_FNAME);
+            fs::write(output_path_css.clone(), CSS_ROBOTO_INLINE)
+                .with_context(|| format!("Failed to write file `{}`",
+                                         output_path_css.display()))?;
+        }
+
+        if html_template.contains(SHOWER_FNAME_OUT_CSS) {
+            println!("[WARN] based on the index.html header, it seems that '{}' \
+was already added, ignoring...", SHOWER_FNAME_OUT_CSS);
+        } else {
+            update_header(&mut v_html_content,
+                          SHOWER_FNAME_OUT_CSS, UpdateHeaderOpt::CssLink);
+            let output_path_shower_css = styles_dir.join(SHOWER_FNAME_OUT_CSS);
+            fs::write(output_path_shower_css.clone(), SHOWER_STR_CSS)
+                .with_context(|| format!("Failed to write file `{}`",
+                                         output_path_shower_css.display()))?;
+        }
+    }
+
+    // include stylesheet
+    match theme {
+        Stylesheet::None => { () }
+        Stylesheet::DdBasic => {
+            let fname = "dd_basic.css";
+            if html_template.contains(fname) {
+                println!("[WARN] based on the index.html header, it seems that \
+'{}' was already added, ignoring...", fname);
+            } else {
+
+                let output_path_css = styles_dir.join(fname);
+                fs::write(&output_path_css, CSS_DD_BASIC)
+                    .with_context(|| format!("Failed to write file `{}`",
+                                             output_path_css.display()))?;
+                update_header(&mut v_html_content, fname, UpdateHeaderOpt::CssLink);
+
+            }
+        }
+        Stylesheet::DdVars => {
+            let fname = "dd_vars.css";
+            if html_template.contains(fname) {
+                println!("[WARN] based on the index.html header, it seems that \
+'{}' was already added, ignoring...", fname);
+            } else {
+                let output_path_css = styles_dir.join(fname);
+                fs::write(&output_path_css, CSS_DD_VARS
+                          .replace("DEFAULT_CSS_VARS",
+                                   &css_vars::get_default_css_vars("","",""))
+                          .trim())
+                    .with_context(|| format!("Failed to write file `{}`",
+                                             output_path_css.display()))?;
+                update_header(&mut v_html_content, fname,
+                              UpdateHeaderOpt::CssLink);
+            }
+        }
+    }
+    if let Some(css_path) = css_path {
+        let custom_css_content = std::fs::read_to_string(css_path)
+            .with_context(|| format!("Failed to read CSS stylesheet \
+from `{}`", css_path.display()))?;
+        if let Some(fname) = css_path.file_name() {
+            if html_template.contains(fname.to_str().unwrap()) {
+                println!("[WARN] based on the index.html header, it seems that \
+'{}' was already added, ignoring...", fname.to_str().unwrap());
+            } else {
+                let output_path_css = styles_dir.join(fname);
+                fs::write(output_path_css.clone(), custom_css_content)
+                    .with_context(|| format!("Failed to write file `{}`",
+                                             output_path_css.display()))?;
+
+                if let Some(fname_str) = fname.to_str() {
+                    update_header(&mut v_html_content, fname_str,
+                                  UpdateHeaderOpt::CssLink);
+                }
+            }
+        }
+    }
+
+    // scripts
+    if *shower {
+        if html_template.contains(SHOWER_FNAME_OUT_JS) {
+            println!("[WARN] based on the index.html header, it seems that \
+'{}' was already added, ignoring...", SHOWER_FNAME_OUT_JS);
+        } else {
+            update_header(&mut v_html_content,
+                          SHOWER_FNAME_OUT_JS, UpdateHeaderOpt::JsSrc);
+        }
+    };
+
+    if *mathjax {
+        if html_template.contains(MATHJAX_NAME_OUT) {
+            println!("[WARN] based on the index.html header, it seems that \
+'{}' was already added, ignoring...", MATHJAX_NAME_OUT);
+        } else {
+            update_header(&mut v_html_content,
+
+                          MATHJAX_NAME_OUT, UpdateHeaderOpt::JsSrcAsync);
+            let odir = lib_dir.join(MATHJAX_SUBDIR);
+            fs::create_dir_all(&odir)?;
+            let output_path_mathjax = lib_dir.join(MATHJAX_NAME_OUT);
+            fs::write(&output_path_mathjax, MATHJAX_JS_STR)
+                .with_context(|| format!("Failed to write file `{}`",
+                                         output_path_mathjax.display()))?;
+
+            // also include fonts
+            for (name, data) in MATHJAX_FONT_FILES {
+                let odir_fonts = odir.join(MATHJAX_FONT_DIR);
+                fs::create_dir_all(&odir_fonts)?;
+                let output_fpath = odir_fonts.join(name);
+                //println!("File {} is {} bytes", name, data.len());
+                fs::write(&output_fpath, data)
+                    .with_context(|| format!("Failed to write Mathjax Font file
+                                             `{}`",
+                                             output_fpath.display()))?;
+            }
+        }
+    }
+
+    if *shower {
+        let output_path_shower_js = lib_dir.join(SHOWER_FNAME_OUT_JS);
+        fs::write(output_path_shower_js.clone(), SHOWER_STR_JS)
+            .with_context(|| format!("Failed to write file `{}`",
+                    output_path_shower_js.display()))?;
+
+        // body start
+        v_html_content[1] = format!(r#"</head>
+  <body class="shower">
+    {}"#, v_html_content[1].trim());
+
+        if html_template.contains(SHOWER_PROGRESS_HTML) {
+            // body content
+            v_html_content[2] = format!(r#"{0}"#,  v_html_content[2].trim());
+        } else {
+            // body content
+            v_html_content[2] = format!(r#"{0}
+    {1}"#,  v_html_content[2].trim(), SHOWER_PROGRESS_HTML);
+        }
+        // body end
+        v_html_content[3] = format!(r#"
+  </body>
+{0}"#, v_html_content[3].trim());
+    } else {
+        // body start
+        v_html_content[1] = format!(r#"</head>
+  <body>{}"#, v_html_content[1].trim());
+
+        // body content
+        v_html_content[2] = format!(r#"
+    {0}"#, v_html_content[2].trim());
+
+        // body end
+        v_html_content[3] = format!(r#"
+  </body>
+{0}"#, v_html_content[3].trim());
+    }
+
+    // update inline style last so it has prio
+    let html_content = v_html_content .join("");
+
+    fs::write(output_path_html.clone(), html_content)
+        .with_context(|| format!("Failed to write file `{}`",
+                                 output_path_html.display()))?;
+
+    println!("Successfully updated presentation at `{}`",
              output_path_html.display());
 
     Ok(())
@@ -1261,19 +1650,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd
     match &cli.command {
-        Commands::Create { template, template_path,
+        Commands::Create { template, template_path, input_directory,
                            theme, css_path, no_inline_fonts,
-                           output_dir, filename, shower, mathjax } => {
+                           output_dir, shower, mathjax } => {
             create_presentation(&template,
                                 template_path,
+                                input_directory,
                                 &theme,
                                 css_path,
                                 output_dir,
-                                filename,
                                 shower,
                                 mathjax,
                                 no_inline_fonts)?;
         }
+
+        Commands::Update { input_dir, theme, css_path,
+                           shower, mathjax } => {
+            update_presentation(input_dir,
+                                &theme,
+                                css_path,
+                                shower,
+                                mathjax)?;
+        }
+
         Commands::Publish { input_dir, commit, method,
                             ssh_key, ssh_pass, endpoint, username, output_dir,
                             include } => {
