@@ -350,7 +350,7 @@ cd lib/libcompono \
 
 #### Build shower
 
-```
+```sh
 cd lib/libcompono && yarn build:shower
 ```
 
@@ -364,15 +364,23 @@ cd lib/mathjax && yarn install
 
 **Run program:**
 
-```
+```sh
 cargo run -- <subcommand> [OPTIONS]
 ```
 
 **Build:**
 
-```
+```sh
 cargo build
 ```
+
+Or build release:
+
+```sh
+cargo build --release
+```
+
+
 
 **Install**:
 
