@@ -44,17 +44,22 @@ compono create --theme dd-basic --template example --shower --mathjax
 
 The output of this command is [available here](https://digitaldasein.github.io/compono/example-dd-basic/).
 
-### Common local setup
+### Set `COMPONO_PATH` environmental variable
 
-You have your own local directory that stores custom [`stylesheets`](https://github.com/digitaldasein/compono/blob/main/src/styles/dd_basic.css)
-(`*.css` files) and [`templates`](https://github.com/digitaldasein/compono/tree/main/src/templates) (`*.html` files), among other assets. `Compono`
-will **read** this directory **recursively** when creating a presentation and prompt the user for input (choices). You can provide an `input path` to
-this directory with the `-i | --input-directory` option, or set the ENVIRONMENTAL VARIABLE `COMPONO_PATH`. For example, add the following line to your
-`bashrc`:
+A **common workflow** is to have your **own local directory** with custom
+[`stylesheets`](https://github.com/digitaldasein/compono/blob/main/src/styles/dd_basic.css) (`*.css` files) and
+[`templates`](https://github.com/digitaldasein/compono/tree/main/src/templates) (`*.html` files), among other assets. `Compono` will **read** this
+directory **recursively** when creating a presentation and prompt the user for input (choices). 
+
+Set the environmental variable `COMPONO_PATH`. For example, by adding the following line to your `bashrc`:
 
 ```sh
 export COMPONO_PATH=/path/to/compono/files
 ```
+
+When running `compono create`, a prompt will also ask to include libraries such as `shower`, and `mathjax`.
+
+**Alternatively**, you can provide an `input path` to a local directory with the `-i|--input-directory` option.
 
 ## Features
 
