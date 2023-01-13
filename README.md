@@ -6,9 +6,9 @@ SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
 SPDX-License-Identifier: MIT
 -->
 
-[quick start](#quick-start) &nbsp;&ndash;&nbsp; [features](#features) 
-&nbsp;&ndash;&nbsp; [docs](#docs) &nbsp;&ndash;&nbsp; [examples](#examples) 
-&nbsp;&ndash;&nbsp; [development](#development) &nbsp;&ndash;&nbsp; 
+[quick start](#quick-start) &nbsp;&ndash;&nbsp; [features](#features)
+&nbsp;&ndash;&nbsp; [docs](#docs) &nbsp;&ndash;&nbsp; [examples](#examples)
+&nbsp;&ndash;&nbsp; [development](#development) &nbsp;&ndash;&nbsp;
 [attribution](#attribution) &nbsp;&ndash;&nbsp; [licenses](#licenses)
 
 
@@ -16,63 +16,65 @@ SPDX-License-Identifier: MIT
 
 ![build](https://github.com/digitaldasein/compono/actions/workflows/build.yml/badge.svg)
 ![tests](https://github.com/digitaldasein/compono/actions/workflows/test.yml/badge.svg)
-[![REUSE 
+[![REUSE
 status](https://api.reuse.software/badge/github.com/digitaldasein/compono)](https://api.reuse.software/info/github.com/digitaldasein/compono)
 
-A batteries-included **command-line utility** for **creating**, **publishing**, 
-and **archiving** component-based **HTML presentations**.  Quickly develop 
-content by exploiting a set of (native) [web 
-components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), 
-included via the [`libcompono` 
-library](https://github.com/digitaldasein/libcompono).
+A batteries-included **command-line utility** for **creating**, **publishing**, and **archiving** component-based **HTML presentations**.  Quickly
+develop content by exploiting a set of (native) [web components](https://developer.mozilla.org/en-US/docs/Web/Web_Components), included via the
+[`libcompono` library](https://github.com/digitaldasein/libcompono).
 
 ## Quick start
 
-<b>Download</b> the [latest 
-release](https://github.com/digitaldasein/compono/releases/latest) and move the 
-binary to a convenient location on your system (e.g.  `/usr/local/bin/`).
+<b>Download</b> the [latest release](https://github.com/digitaldasein/compono/releases/latest) and move the binary to a convenient location on your
+system (e.g.  `/usr/local/bin/`).
 
 Initialise <b>new, empty presentation</b>:
 
-```
+```sh
 compono create
 ```
 
-Initialise an <b>example presentation</b>, including the 
-[`shower`](https://github.com/shower/shower) and 
-[`mathjax`](https://www.mathjax.org/) libraries, as well as the 
-[`dd-basic`](./src/styles/dd_basic.css) <b>theme</b>:
+Initialise an <b>example presentation</b>, including the [`shower`](https://github.com/shower/shower) and [`mathjax`](https://www.mathjax.org/)
+libraries, as well as the [`dd-basic`](./src/styles/dd_basic.css) <b>theme</b>:
 
 ```sh
 compono create --theme dd-basic --template example --shower --mathjax
 ```
 (<i>short version</i>: `compono create -t dd-basic -T example -s -m`)
 
-The output of this command is [available 
-here](https://digitaldasein.github.io/compono/example-dd-basic/).
+The output of this command is [available here](https://digitaldasein.github.io/compono/example-dd-basic/).
+
+### Common local setup
+
+You have your own local directory that stores custom [`stylesheets`](https://github.com/digitaldasein/compono/blob/main/src/styles/dd_basic.css)
+(`*.css` files) and [`templates`](https://github.com/digitaldasein/compono/tree/main/src/templates) (`*.html` files), among other assets. `Compono`
+will **read** this directory **recursively** when creating a presentation and prompt the user for input (choices). You can provide an `input path` to
+this directory with the `-i | --input-directory` option, or set the ENVIRONMENTAL VARIABLE `COMPONO_PATH`. For example, add the following line to your
+`bashrc`:
+
+```sh
+export COMPONO_PATH=/path/to/compono/files
+```
 
 ## Features
 
 - Batteries included: a **single (*static*) binary** (~5MB)
-- Generates an <b>all-local</b> HTML presentation base, no internet connection 
-  required!
-- Built-in, *customisable* **web components**,  **stylesheets** and **HTML 
-  templates**
-- Automatically publish your presentation to **Gitlab**, **Github**, or to a 
-  **remote server**
-- **Archive** and **compress** your presentation to a `.tar.gz`- or 
-  `.zip`-file
+- Generates an <b>all-local</b> HTML presentation base, no internet connection required!
+- Built-in, *customisable* **web components**,  **stylesheets** and **HTML templates**
+- Automatically publish your presentation to **Gitlab**, **Github**, or to a  **remote server**
+- **Archive** and **compress** your presentation to a `.tar.gz`- or `.zip`-file
 
 ## Docs
 
 - [Creating a presentation](#create)
+- [Updating a presentation](#update)
 - [Publishing a presentation](#publish)
 - [Archiving a presentation](#archive)
 - [Custom web components](#custom-web-components)
 
 ### Available options and subcommands
 
-```sh
+```
 USAGE:
     compono <SUBCOMMAND>
 
@@ -89,7 +91,9 @@ SUBCOMMANDS:
 
 ### Create
 
-```bash
+```
+Initialise new HTML presentation
+
 USAGE:
     compono create [OPTIONS]
 
@@ -97,11 +101,12 @@ OPTIONS:
     -c, --css-path <CSS_PATH>
             Path to custom CSS stylesheet
 
-    -f, --filename <FILENAME>
-            filename HTML output
-
     -h, --help
             Print help information
+
+    -i, --input-directory <INPUT_DIRECTORY>
+            Path to local input directory with ./templates, ./styles, etc. This
+            will initiate a user prompt
 
     -m, --mathjax
             Include mathjax engine for rendering math (LaTeX-like)
@@ -119,13 +124,47 @@ OPTIONS:
             Include shower presentation javascript core
 
     -t, --theme <THEME>
-            Theme (CSS styles). For a custom css path, see the `--css-path`
-            option [default: none] [possible values: none, dd-vars, dd-basic]
+            Theme (Built-in CSS styles). For a custom css path, see the
+            `--css-path` option [default: none] [possible values: none, dd-vars,
+            dd-basic]
 
     -T, --template <TEMPLATE>
             Use HTML template for presentation. For a custom template path, see
             the `--template-path` option [default: minimal] [possible values:
-            minimal, minimal-vim, css-vars, example, example-css-vars]
+            minimal, css-vars, example, example-css-vars]
+
+    -V, --version
+            Print version information
+```
+
+### Update
+
+```
+Update your setup (add stylesheets, libraries, ...)
+
+USAGE:
+    compono update [OPTIONS]
+
+OPTIONS:
+    -c, --css-path <CSS_PATH>
+            Path to custom CSS stylesheet
+
+    -h, --help
+            Print help information
+
+    -i, --input-dir <INPUT_DIR>
+            Path to presentation directory [default: ./]
+
+    -m, --mathjax
+            Include mathjax engine for rendering math (LaTeX-like)
+
+    -s, --shower
+            Include shower presentation javascript core
+
+    -t, --theme <THEME>
+            Theme (Built-in CSS styles). For a custom css path, see the
+            `--css-path` option [default: none] [possible values: none, dd-vars,
+            dd-basic]
 
     -V, --version
             Print version information
@@ -133,11 +172,10 @@ OPTIONS:
 
 ### Publish
 
-_Note that by default, the `src` tags in the index.html are checked to 
-determine which files to **include for publishing**. Alternative methods can be 
+_Note that by default, the `src` tags in the index.html are checked to determine which files to **include for publishing**. Alternative methods can be
 set with the `--method` option._
 
-```bash
+```
 Publish HTML presentation
 
 USAGE:
@@ -186,11 +224,10 @@ OPTIONS:
 
 ### Archive
 
-_Note that by default, the `src` tags in the index.html are checked to 
-determine which files to **include for publishing**. Alternative methods can be 
+_Note that by default, the `src` tags in the index.html are checked to determine which files to **include for publishing**. Alternative methods can be
 set with the `--method` option._
 
-```bash
+```
 Archive presentation (tar.gz or zip)
 
 USAGE:
@@ -224,8 +261,7 @@ OPTIONS:
 
 ### Custom web components
 
-Check out documentation for all [included web 
-components](https://github.com/digitaldasein/libcompono):
+Check out documentation for all [included web components](https://github.com/digitaldasein/libcompono):
 
 - [dd-grid](https://digitaldasein.github.io/dd-grid/docs/classes/DdGrid.html)
 - [dd-code](https://digitaldasein.github.io/dd-code/docs/classes/DdCode.html)
@@ -236,8 +272,7 @@ components](https://github.com/digitaldasein/libcompono):
 
 ## Examples
 
-&rarr; [See here for <b>example commands</b> and <b>published</b> 
-presentations](./examples)
+&rarr; [See here for <b>example commands</b> and <b>published</b> presentations](./examples)
 
 ### Minimal presentation HTML
 
@@ -285,6 +320,7 @@ presentations](./examples)
   </body>
 </html>
 ```
+
 <b>Output:</b>
 
 ![](compono.gif)
@@ -295,7 +331,7 @@ presentations](./examples)
 
 #### Install/update
 
-```sh
+```
 git submodule update --init --recursive --remote --merge
 ```
 
@@ -309,13 +345,13 @@ cd lib/libcompono \
 
 #### Build shower
 
-```sh
+```
 cd lib/libcompono && yarn build:shower
 ```
 
 #### Install MathJax
 
-```sh
+```
 cd lib/mathjax && yarn install
 ```
 
@@ -329,55 +365,46 @@ cargo run -- <subcommand> [OPTIONS]
 
 **Build:**
 
-```sh
+```
 cargo build
 ```
 
 **Install**:
 
-```sh
+```
 cargo install --path .
 ```
 
 ### Run utils (optional)
 
-```sh
+```
 cd utils && cargo run
 ```
 
 ## Attribution
 
 ### [Shower](https://github.com/shower/shower)
-[`libcompono`](https://github.com/digitaldasein/libcompono) is heavily inspired 
-by the [Shower presentation 
-engine](https:/https://github.com/digitaldasein/libcompono/github.com/shower/shower). 
-The 
-[`dd-slide-collection`](https://digitaldasein.github.io/dd-slide-collection/docs/classes/DdSlideCollection.html) 
-component in particular adopted several features and styles from Shower.
 
-Even more so, `libcompono` is **fully compatible** with the [shower 
-core](https://github.com/shower/core/), which can be automatically included 
-using the `--shower` option when creating a presentation.
+[`libcompono`](https://github.com/digitaldasein/libcompono) is heavily inspired by the [Shower presentation
+engine](https:/https://github.com/digitaldasein/libcompono/github.com/shower/shower). The
+[`dd-slide-collection`](https://digitaldasein.github.io/dd-slide-collection/docs/classes/DdSlideCollection.html) component in particular adopted
+several features and styles from Shower.
 
-As such, the Shower core can **extend** the basic `compono` components, which 
-aim to merely possess a limited (yet practical) set of functionalities.
+Even more so, `libcompono` is **fully compatible** with the [shower core](https://github.com/shower/core/), which can be automatically included using
+the `--shower` option when creating a presentation.
 
-Big thanks to all the Shower contributors!
+As such, the Shower core can **extend** the basic `compono` components, which aim to merely possess a limited (yet practical) set of functionalities.
+
+Big shout out to all the Shower contributors!
 
 ## Licenses
 
-(See also file headers and [REUSE 
-status](https://api.reuse.software/info/github.com/digitaldasein/compono))
+(See also file headers and [REUSE status](https://api.reuse.software/info/github.com/digitaldasein/compono))
 
-In summary, the available [licenses](./LICENSES) are applied to the following 
-software:
-- <b>MIT</b>: `compono` utility,
-  [`libcompono`](https://github.com/digitaldasein/libcompono),
-  all `dd-components`, [shower presentation 
-  core](https://github.com/shower/core/)
-- <b>Apache-2.0</b>: Google's [Roboto 
-  Font](https://en.wikipedia.org/wiki/Roboto)
-- <b>BSD-3-Clause:</b>: All `dd-components` use the [lit 
-  library](https://lit.dev/docs/), which is licensed under BSD-3-Clause. Hence, 
-  the production-ready build of the `libcompono` library&mdash;used in the 
-  [examples](./examples)&mdash;adopts these for the `lit` portion of the code.
+In summary, the available [licenses](./LICENSES) are applied to the following software:
+- <b>MIT</b>: `compono` utility, [`libcompono`](https://github.com/digitaldasein/libcompono), all `dd-components`, [shower presentation
+    core](https://github.com/shower/core/)
+- <b>Apache-2.0</b>: Google's [Roboto Font](https://en.wikipedia.org/wiki/Roboto)
+- <b>BSD-3-Clause:</b>: All `dd-components` use the [lit library](https://lit.dev/docs/), which is licensed under BSD-3-Clause. Hence,
+  the production-ready build of the `libcompono` library&mdash;used in the [examples](./examples)&mdash;adopts these for the `lit` portion of the
+  code.

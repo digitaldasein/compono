@@ -38,6 +38,8 @@ mod css_vars;
  *---------------------------------------------------------------------*/
 
 // default constants
+const COMPONO_PATH_ENV_VAR:&str = "COMPONO_PATH";
+
 const CREATE_OUTPUT_DIR_STR:&str = "./";
 const DIR_LIB:&str = "./lib";
 const DIR_STYLES:&str = "./styles";
@@ -162,12 +164,12 @@ enum Commands {
         no_inline_fonts: bool,
 
         /// Path to local input directory with ./templates, ./styles, etc. This
-        /// will initiate a user promt
+        /// will initiate a user prompt
         #[clap(short='i', long, value_parser)]
         input_directory: Option<std::path::PathBuf>,
     },
 
-    /// Update stylesheets and libraries based
+    /// Update your setup (add stylesheets, libraries, ...)
     #[clap(visible_aliases = &["add"]) ]
     Update {
         /// Path to presentation directory
@@ -427,32 +429,28 @@ fn inspect_input_dir(input_dir:&Path,
     let mut cnt_templates:u8 = 0;
 
     for entry in walker {
-        if entry.file_type().is_dir() {
-            //println!("{}", entry.path().file_name().unwrap().to_str().unwrap());
+        if entry.file_type().is_file() {
             // styles
-            if matches!(entry.path().file_name().unwrap().to_str().unwrap(),
-                        "styles" | "themes"){
-                //println!("{}", entry.path().display());
-                let filepaths = fs::read_dir(entry.path()).unwrap();
-                for path in filepaths {
-                    hash_styles_fp.insert(
-                        cnt_styles,
-                        path.unwrap().path()
-                        );
-                    cnt_styles = cnt_styles + 1;
-                }
+            if entry.path().extension().unwrap() == "css" {
+                //let filepaths = fs::read_dir(entry.path()).unwrap();
+                //for path in filepaths {
+                hash_styles_fp.insert(
+                    cnt_styles,
+                    entry.path().to_path_buf()
+                    );
+                cnt_styles = cnt_styles + 1;
+                //}
             };
-            if matches!(entry.path().file_name().unwrap().to_str().unwrap(),
-                        "templates" | "tmpl" ){
+            if entry.path().extension().unwrap() == "html" {
                 //println!("{}", entry.path().display());
-                let filepaths = fs::read_dir(entry.path()).unwrap();
-                for path in filepaths {
-                    hash_templates_fp.insert(
-                        cnt_templates,
-                        path.unwrap().path()
-                        );
-                    cnt_templates = cnt_templates + 1;
-                }
+                //let filepaths = fs::read_dir(entry.path()).unwrap();
+                //for path in filepaths {
+                hash_templates_fp.insert(
+                    cnt_templates,
+                    entry.path().to_path_buf()
+                    );
+                cnt_templates = cnt_templates + 1;
+                //}
             };
         }
     }
@@ -1025,7 +1023,7 @@ fn create_presentation(template:&Template,
     if output_path_html.exists() {
         let overwrite = user_input(
             &format!("[WARNING] The file '{}' already exists.
-Overwrite it (y/[n])? ", output_path_html.display()));
+Overwrite it (y/[N])? ", output_path_html.display()));
         if overwrite != "y" && overwrite != "yes" {
             println!("Playing it safe. Bye!");
             process::exit(1);
@@ -1040,11 +1038,25 @@ Overwrite it (y/[n])? ", output_path_html.display()));
 
     // get input stylesheets and templates (with user prompt)
     // note that these will have priority (if selected) over other CLI args
+    // and ENV_VAR has priority over -i option
+    // <https://programming-idioms.org/idiom/205/get-an-environment-variable/3700/rust>
+    let s_env_path = env::var(COMPONO_PATH_ENV_VAR)
+        .unwrap_or("".to_string());
+
+    let input_dir:Option<&Path> = if !s_env_path.is_empty() {
+        Some(std::path::Path::new(&s_env_path))
+    } else if let Some(idir) = input_directory {
+        Some(idir.as_path())
+    } else {
+        None
+    };
+
     let mut input_style_fpath:Option<std::path::PathBuf> = None;
     let mut input_template_fpath:Option<std::path::PathBuf> = None;
     let mut b_input_shower = false;
     let mut b_input_mathjax = false;
-    if let Some(idir) = input_directory {
+
+    if let Some(idir) = input_dir {
         println!("========== CUSTOM INPUT FOLDER ==========");
         inspect_input_dir(idir, &mut input_style_fpath, &mut
                           input_template_fpath)?;
@@ -1063,6 +1075,7 @@ library ([N]/y): ");
             }
         }
     }
+
 
     // get html template
     let html_template = if let Some(tpath) = &input_template_fpath {
@@ -1116,7 +1129,19 @@ from `{}`", tpath.display()))?
 
     // Stylesheets
     // include roboto font
+
+    // parse string from custom input path to check later if it contains the "Roboto" substring
+    let s_stylesheet = if let Some(fpath) = &input_style_fpath {
+        std::fs::read_to_string(fpath)
+            .with_context(|| format!("Failed to read CSS stylesheet \
+from `{}`", fpath.display()))?
+    } else {
+        "".to_string()
+    };
+
     if *shower || b_input_shower
+               || s_stylesheet.contains("Roboto")
+               || s_stylesheet.contains("roboto")
                || matches!(theme, Stylesheet::DdBasic)
                || matches!(theme, Stylesheet::DdVars) {
 
