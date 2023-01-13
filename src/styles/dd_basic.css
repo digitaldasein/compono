@@ -118,7 +118,7 @@ dd-code {
    --dd-code-font-size:         0.75em;
    --dd-code-padding:           1em;
    --dd-code-margin:            0.5em 0 0.5em 0;
-   --dd-code-padding-line-nr:   1.5em;
+   --dd-code-padding-line-nr:   1em;
    --dd-code-color-bg:          #f3f3f3;
    --dd-code-color-fg:          black;
    --dd-code-color-lang:        rgba(0,0,0,0.6);

@@ -118,7 +118,7 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-code-font-size:              0.75em;
 {indent}    --dd-code-padding:                1em;
 {indent}    --dd-code-margin:                 0.5em 0 0.5em 0;
-{indent}    --dd-code-padding-line-nr:        1.5em;
+{indent}    --dd-code-padding-line-nr:        1em;
 {indent}    --dd-code-color-bg:               #f3f3f3;
 {indent}    --dd-code-color-fg:               black;
 {indent}    --dd-code-color-lang:             rgba(0,0,0,0.6);

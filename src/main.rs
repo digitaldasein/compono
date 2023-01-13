@@ -1130,7 +1130,8 @@ from `{}`", tpath.display()))?
     // Stylesheets
     // include roboto font
 
-    // parse string from custom input path to check later if it contains the "Roboto" substring
+    // parse string from custom input path to check later if it contains the
+    // "Roboto" substring
     let s_stylesheet = if let Some(fpath) = &input_style_fpath {
         std::fs::read_to_string(fpath)
             .with_context(|| format!("Failed to read CSS stylesheet \
