@@ -839,9 +839,9 @@ project in under git control (with a remote oriign)"))?;
         _ => { panic!("Git platform not recognised") }
     }
 
-    //git_add(&repo, v_files_incl)?;
+    git_add(&repo, v_files_incl)?;
     //let (commit, three_id) = git_commit(&repo, &commit);
-    //git_commit(&repo, &commit)?;
+    git_commit(&repo, &commit)?;
 
     let mut cb = RemoteCallbacks::new();
     let mut push_opts = PushOptions::new();
