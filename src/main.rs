@@ -104,6 +104,8 @@ const ARCHIVE_OUT_NAME:&str = "present-<date>";
 const ZIP_METHOD_STORED:zip::CompressionMethod = zip::CompressionMethod::Stored;
 const ZIP_METHOD_DEFLATED:zip::CompressionMethod = zip::CompressionMethod::Deflated;
 
+const GITHUB_PAGES_URL_SUFFIX:&str = "settings/pages";
+const GITLAB_PAGES_URL_SUFFIX:&str = "pages";
 
 // CLI
 #[derive(Parser)]
@@ -783,17 +785,9 @@ To ignore this warning, add the comment `{1}` to your config",
     Ok (())
 }
 
-fn encode_pages_url_from_ssh(cfg_remote_url:String) -> String {
+fn encode_url_from_ssh(cfg_remote_url:&str) -> String {
     let v_split_at: Vec<&str> = cfg_remote_url.split("@").collect();
-    let v_split_dot: Vec<&str> = v_split_at[1].split(".").collect();
-    let v_split_colon: Vec<&str> = v_split_at[1].split(":").collect();
-    let v_split_slash: Vec<&str> = v_split_colon[1].split("/").collect();
-
-    format!("https://{0}.{1}.io/{2}",
-        v_split_slash[0],
-        v_split_dot[0],
-        v_split_slash[1..].join("/")
-        .replace(".git", "/"))
+    format!("https://{0}", v_split_at[1].replace(":", "/").replace(".git", ""))
 }
 
 fn publish_to_git(input_dir:&std::path::PathBuf,
@@ -845,9 +839,9 @@ project in under git control (with a remote oriign)"))?;
         _ => { panic!("Git platform not recognised") }
     }
 
-    git_add(&repo, v_files_incl)?;
+    //git_add(&repo, v_files_incl)?;
     //let (commit, three_id) = git_commit(&repo, &commit);
-    git_commit(&repo, &commit)?;
+    //git_commit(&repo, &commit)?;
 
     let mut cb = RemoteCallbacks::new();
     let mut push_opts = PushOptions::new();
@@ -880,10 +874,21 @@ Make sure to provide proper SSH credentials by using options \
     println!("Successfully published presentation!");
 
     // currently, github and gitlab require same encoding
-    if cfg_remote_url.contains("@") {
-        println!("Your slides will shortly be available at: {}",
-            encode_pages_url_from_ssh(cfg_remote_url));
-    }
+    let remote_url = if cfg_remote_url.contains("@") {
+        encode_url_from_ssh(&cfg_remote_url)
+    } else {
+        cfg_remote_url
+    };
+
+    let pages_url:String = match git_platform {
+        "github" => { format!("{0}/{1}", remote_url,
+                              GITHUB_PAGES_URL_SUFFIX) }
+        "gitlab" => { format!("{0}/{1}", remote_url,
+                              GITLAB_PAGES_URL_SUFFIX) }
+        _ => { panic!("Git platform not recognised") }
+    };
+
+    println!("Check out your pages URL: {}", pages_url);
     Ok(())
 }
 

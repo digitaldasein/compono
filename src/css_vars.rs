@@ -54,6 +54,8 @@ pub fn get_default_css_vars(prefix:&str, indent:&str, suffix:&str)
 {indent}    --dd-font:                        24px/2 'Roboto', sans-serif;
 {indent}    --dd-font-size:                   24px;
 {indent}    --dd-caption-height:              250px;
+{indent}    --dd-caption-font-size:           calc(2.2 * var(--dd-font-size));
+{indent}    --dd-caption-img-height:          calc(0.5 * var(--dd-caption-height));
 {indent}}}
 
 {indent}/* Slide */

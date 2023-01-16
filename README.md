@@ -380,8 +380,6 @@ Or build release:
 cargo build --release
 ```
 
-
-
 **Install**:
 
 ```

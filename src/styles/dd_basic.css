@@ -54,6 +54,8 @@ dd-slide-collection {
    --dd-font:              24px/2 'Roboto', sans-serif;
    --dd-font-size:         24px;
    --dd-caption-height:    250px;
+   --dd-caption-font-size: calc(2.2 * var(--dd-font-size));
+   --dd-caption-img-height:calc(0.5 * var(--dd-caption-height));
 }
 
 dd-slide {
