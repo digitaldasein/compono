@@ -408,21 +408,21 @@ cd utils && cargo run
 
 #### Test compono binary on clean Ubuntu image
 
-This test check is to verify whether all dependencies are statically linked and no other issues occur.
-
-The former can also be checked with:
-
-```sh
-readelf -d target/debug/compono | grep NEEDED
-```
-
-Build image and run compono:
+Build image and test that compono without any issues:
 
 ```sh
 docker build -t compono-test-ubuntu20 \
   -f test/integration/linux-ubuntu-20/Dockerfile .
 docker run compono-test-ubuntu20 compono
 ```
+
+This test verifies whether all dependencies are statically linked and no other issues occur. The former can also be checked with, for example, with:
+
+```sh
+readelf -d target/x86_64-unknown-linux-gnu/debug/compono | grep NEEDED
+```
+
+(This should return nothing if no dynamic libs are linked.)
 
 ## Attribution
 

@@ -65,7 +65,7 @@ Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
 License: MIT
 
 # Cargo.*
-Files: Cargo.* **/Cargo.*
+Files: Cargo.* **/Cargo.* .cargo/*
 Copyright: $YEAR $NAME Digital Dasein <https://digitaldasein.org>
 Copyright: $YEAR $NAME Gerben Peeters <gerben@digitaldasein.org>
 Copyright: $YEAR $NAME Senne Van Baelen <senne@digitaldasein.org>
