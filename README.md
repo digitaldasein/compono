@@ -6,11 +6,14 @@ SPDX-FileCopyrightText: 2022 Gerben Peeters <gerben@digitaldasein.org>
 SPDX-License-Identifier: MIT
 -->
 
-[quick start](#quick-start) &nbsp;&ndash;&nbsp; [features](#features)
-&nbsp;&ndash;&nbsp; [docs](#docs) &nbsp;&ndash;&nbsp; [examples](#examples)
-&nbsp;&ndash;&nbsp; [development](#development) &nbsp;&ndash;&nbsp;
-[attribution](#attribution) &nbsp;&ndash;&nbsp; [licenses](#licenses)
-
+[quick start](#quick-start) &nbsp;&ndash;&nbsp;
+[features](#features) &nbsp;&ndash;&nbsp;
+[docs](#docs) &nbsp;&ndash;&nbsp;
+[examples](#examples) &nbsp;&ndash;&nbsp;
+[development](#development) &nbsp;&ndash;&nbsp;
+[tests](#tests) &nbsp;&ndash;&nbsp;
+[attribution](#attribution) &nbsp;&ndash;&nbsp;
+[licenses](#licenses)
 
 # Compono
 
@@ -63,7 +66,7 @@ When running `compono create`, a prompt will also ask to include libraries such 
 
 ## Features
 
-- Batteries included: a **single (*static*) binary** (~5MB)
+- Batteries included: a **single (*static*) binary** (~8MB)
 - Generates an <b>all-local</b> HTML presentation base, no internet connection required!
 - Built-in, *customisable* **web components**,  **stylesheets** and **HTML templates**
 - Automatically publish your presentation to **Gitlab**, **Github**, or to a  **remote server**
@@ -399,6 +402,28 @@ cargo install --path .
 cd utils && cargo run
 ```
 
+## Tests
+
+### Integrations
+
+#### Test compono binary on clean Ubuntu image
+
+This test check is to verify whether all dependencies are statically linked and no other issues occur.
+
+The former can also be checked with:
+
+```sh
+readelf -d target/debug/compono | grep NEEDED
+```
+
+Build image and run compono:
+
+```sh
+docker build -t compono-test-ubuntu20 \
+  -f test/integration/linux-ubuntu-20/Dockerfile .
+docker run compono-test-ubuntu20 compono
+```
+
 ## Attribution
 
 ### [Shower](https://github.com/shower/shower)
@@ -414,6 +439,7 @@ the `--shower` option when creating a presentation.
 As such, the Shower core can **extend** the basic `compono` components, which aim to merely possess a limited (yet practical) set of functionalities.
 
 Big shout out to all the Shower contributors!
+
 
 ## Licenses
 
