@@ -14,8 +14,10 @@ use std::env;
 use std::process;
 use std::iter::Iterator;
 use std::collections::HashMap;
+
 use chrono::Datelike;
 use itertools::Itertools;
+use pathdiff;
 
 use std::net::TcpStream;
 use clap::{Parser, ArgEnum, Subcommand};
@@ -126,7 +128,7 @@ enum Commands {
     Create {
         /// Use HTML template for presentation.
         /// For a custom template path, see the `--template-path` option.
-        #[clap(short='T', long, value_parser, arg_enum,
+        #[clap(short='t', long, value_parser, arg_enum,
                default_value_t = Template::Minimal) ]
         template: Template,
 
@@ -142,19 +144,19 @@ enum Commands {
         #[clap(short, long, value_parser, default_value=CREATE_OUTPUT_DIR_STR)]
         output_dir: std::path::PathBuf,
 
-        /// Theme (Built-in CSS styles).
+        /// Style (Built-in CSS styles).
         /// For a custom css path, see the `--css-path` option.
-        #[clap(short='t', long, value_parser, arg_enum,
+        #[clap(short='s', long, value_parser, arg_enum,
                default_value_t = Stylesheet::None)
         ]
-        theme: Stylesheet,
+        style: Stylesheet,
 
         /// Path to custom CSS stylesheet.
         #[clap(short='c', long, value_parser)]
         css_path: Option<std::path::PathBuf>,
 
         /// Include shower presentation javascript core
-        #[clap(short, long, action)]
+        #[clap(short='S', long, action)]
         shower: bool,
 
         /// Include mathjax engine for rendering math (LaTeX-like)
@@ -178,12 +180,12 @@ enum Commands {
         #[clap(short, long, value_parser, default_value="./")]
         input_dir: std::path::PathBuf,
 
-        /// Theme (Built-in CSS styles).
+        /// Style (Built-in CSS styles).
         /// For a custom css path, see the `--css-path` option.
-        #[clap(short='t', long, value_parser, arg_enum,
+        #[clap(short='s', long, value_parser, arg_enum,
                default_value_t = Stylesheet::None)
         ]
-        theme: Stylesheet,
+        style: Stylesheet,
 
         /// Path to custom CSS stylesheet.
         #[clap(short='c', long, value_parser)]
@@ -205,6 +207,10 @@ enum Commands {
         /// Path to presentation directory
         #[clap(short, long, value_parser, default_value="./")]
         input_dir: std::path::PathBuf,
+
+        /// Path to git project root (relative or absolute)
+        #[clap(short, long, value_parser, default_value="./")]
+        git_root_dir: std::path::PathBuf,
 
         /// Path to SSH key for gitlab/github authentication
         #[clap(short, long, value_parser, default_value=DEFAULT_SSH_KEY_PATH_STR)]
@@ -412,8 +418,9 @@ Create it? ([n]/y): ", output_dir.display());
 
 fn inspect_input_dir(input_dir:&Path,
                     style_fpath:&mut Option<std::path::PathBuf>,
-                    template_fpath:&mut Option<std::path::PathBuf>
-                    ) -> Result<(), std::io::Error> {
+                    template_fpath:&mut Option<std::path::PathBuf>,
+                    template: &Template, style: &Stylesheet)
+-> Result<(), std::io::Error> {
     if !input_dir.exists(){
         println!("The input directory `{}` does not exist.",
                  input_dir.display());
@@ -457,44 +464,48 @@ fn inspect_input_dir(input_dir:&Path,
         }
     }
 
-    if hash_styles_fp.keys().len() > 0 {
-        println!("=> The following stylesheets are available:");
-        for key in hash_styles_fp.keys().sorted() {
-            println!("   [{:?}] {:?}", key, hash_styles_fp[key]);
-        }
-        let style_nr:String = user_input("Select stylesheet number (or [enter] \
-to ignore): ");
-
-        if !style_nr.is_empty() {
-            *style_fpath =
-                hash_styles_fp.remove(&style_nr.parse::<u8>().unwrap());
-            if style_fpath.is_none() {
-                println!("[WARNING] this stylesheet number does not exist and \
-will be ignored");
+    if matches!(style, Stylesheet::None) {
+        if hash_styles_fp.keys().len() > 0 {
+            println!("=> The following stylesheets are available:");
+            for key in hash_styles_fp.keys().sorted() {
+                println!("   [{:?}] {:?}", key, hash_styles_fp[key]);
             }
+            let style_nr:String = user_input("Select stylesheet number \
+(or [enter] to ignore): ");
+            if !style_nr.is_empty() {
+                *style_fpath =
+                    hash_styles_fp.remove(&style_nr.parse::<u8>().unwrap());
+                if style_fpath.is_none() {
+                    println!("[WARNING] this stylesheet number does not \
+exist and will be ignored");
+                }
+            }
+        } else {
+            println!("[WARNING] No stylesheets (*.css) found in input directory \
+    (will be ignored)");
         }
-    } else {
-        println!("[WARNING] No stylesheets (*.css) found in input directory \
-(will be ignored)");
     }
-    if hash_templates_fp.keys().len() > 0 {
-        println!("=> The following templates are available:");
-        for key in hash_templates_fp.keys().sorted() {
-            println!("   [{:?}] {:?}", key, hash_templates_fp[key]);
-        }
-        let template_nr:String = user_input("Select template number (or [enter] \
-to ignore): ");
-        if !template_nr.is_empty() {
-            *template_fpath =
-                hash_templates_fp.remove(&template_nr.parse::<u8>().unwrap());
-            if template_fpath.is_none() {
-                println!("[WARNING] this template number does not exist and will \
-be ignored");
+
+    if matches!(template, Template::Minimal) {
+        if hash_templates_fp.keys().len() > 0 {
+            println!("=> The following templates are available:");
+            for key in hash_templates_fp.keys().sorted() {
+                println!("   [{:?}] {:?}", key, hash_templates_fp[key]);
             }
+            let template_nr:String = user_input("Select template number \
+(or [enter] to ignore): ");
+            if !template_nr.is_empty() {
+                *template_fpath =
+                    hash_templates_fp.remove(&template_nr.parse::<u8>().unwrap());
+                if template_fpath.is_none() {
+                    println!("[WARNING] this template number does not exist \
+and will be ignored");
+                }
+            }
+        } else {
+            println!("[WARNING] No templates (*.html) found in input directory. \
+    (will be ignored)");
         }
-    } else {
-        println!("[WARNING] No templates (*.html) found in input directory. \
-(will be ignored)");
     }
     Ok(())
 }
@@ -567,8 +578,8 @@ fn update_header(v_html:& mut Vec<String>, content:&str, part:UpdateHeaderOpt) {
 
 }
 
-fn git_add(repo:&Repository, v_files: & mut Vec::<String>)
-            -> Result<(), git2::Error> {
+fn git_add(repo:&Repository, git_root_dir:&std::path::PathBuf,
+           v_files: & mut Vec::<String>) -> Result<(), git2::Error> {
 
     let mut index = repo.index().expect("cannot get the Index file");
 
@@ -576,9 +587,12 @@ fn git_add(repo:&Repository, v_files: & mut Vec::<String>)
 
     for filestr in v_files.iter() {
         //index.add_path()?;
-        let path = Path::new(filestr).strip_prefix("./").
-            expect("Failed to strip prefix from file");
-        index.add_path(path)?;
+        let abs_path = fs::canonicalize(Path::new(filestr)).unwrap();
+        let abs_path_root = fs::canonicalize(git_root_dir).unwrap();
+        let rel_path = pathdiff::diff_paths(&abs_path, &abs_path_root)
+            .unwrap_or_else(|| panic!("Failed to generate relative path for
+                                      '{}'", abs_path.display()));
+        index.add_path(&rel_path)?;
     }
 
     index.write()?;
@@ -791,6 +805,7 @@ fn encode_url_from_ssh(cfg_remote_url:&str) -> String {
 }
 
 fn publish_to_git(input_dir:&std::path::PathBuf,
+                  git_root_dir:&std::path::PathBuf,
                   commit:&str,
                   method:&PubMethod,
                   ssh_key:&Path,
@@ -798,9 +813,11 @@ fn publish_to_git(input_dir:&std::path::PathBuf,
                   v_files_incl: & mut Vec::<String>)
                   -> Result<(), Box<dyn std::error::Error>> {
 
-    let repo = Repository::open(input_dir)
-        .with_context(|| format!("Failed to open Git repository. Make sure your \
-project in under git control (with a remote oriign)"))?;
+    let repo = Repository::open(git_root_dir)
+        .with_context(|| format!("Failed to open Git repository.\nMake sure \
+your project in under git control (with a remote origin)\n\n\
+If you are running compono from a nested Git project dir, set the project root \
+with the '-g|--git-root-dir' option"))?;
 
     let cfg = repo.config()?;
     let cfg_remote_url:String = if let Ok(url) = cfg.get_entry("remote.origin.url"){
@@ -826,20 +843,20 @@ project in under git control (with a remote oriign)"))?;
 
     match git_platform {
         "github" => {
-            let ci_path = Path::new(input_dir).join(GITHUB_CI_PATH);
+            let ci_path = Path::new(git_root_dir).join(GITHUB_CI_PATH);
             fs::create_dir_all(ci_path.parent().unwrap())?;
             v_files_incl.push(ci_path.to_str().unwrap().to_string());
             add_ci_configs(&ci_path, GITHUB_CI)?;
         }
         "gitlab" => {
-            let ci_path = Path::new(input_dir).join(GITLAB_CI_PATH);
+            let ci_path = Path::new(git_root_dir).join(GITLAB_CI_PATH);
             v_files_incl.push(ci_path.to_str().unwrap().to_string());
             add_ci_configs(&ci_path, GITLAB_CI)?;
         }
         _ => { panic!("Git platform not recognised") }
     }
 
-    git_add(&repo, v_files_incl)?;
+    git_add(&repo, git_root_dir, v_files_incl)?;
     //let (commit, three_id) = git_commit(&repo, &commit);
     git_commit(&repo, &commit)?;
 
@@ -889,6 +906,15 @@ Make sure to provide proper SSH credentials by using options \
     };
 
     println!("Check out your pages URL: {}", pages_url);
+    if git_root_dir != std::path::Path::new("./") {
+        let abs_path_root = fs::canonicalize(git_root_dir).unwrap();
+        let abs_path_input = fs::canonicalize(input_dir).unwrap();
+        let rel_path = pathdiff::diff_paths(&abs_path_input, &abs_path_root)
+            .unwrap_or_else(|| panic!("Failed to generate relative path for
+                                      '{}'", abs_path_input.display()));
+        println!("Your presentation will be under the sub-path: '/{}'",
+                 rel_path.display());
+    }
     Ok(())
 }
 
@@ -1009,7 +1035,7 @@ as non-root user)",
 fn create_presentation(template:&Template,
                        template_path:&Option<std::path::PathBuf>,
                        input_directory: &Option<std::path::PathBuf>,
-                       theme:&Stylesheet,
+                       style:&Stylesheet,
                        css_path:&Option<std::path::PathBuf>,
                        output_dir:&std::path::PathBuf,
                        shower:&bool,
@@ -1062,17 +1088,21 @@ Overwrite it (y/[N])? ", output_path_html.display()));
     let mut b_input_mathjax = false;
 
     if let Some(idir) = input_dir {
-        println!("========== CUSTOM INPUT FOLDER ==========");
-        inspect_input_dir(idir, &mut input_style_fpath, &mut
-                          input_template_fpath)?;
-        if !*shower {
+        if matches!(style, Stylesheet::None) || matches!(template,
+                                                         Template::Minimal) {
+            println!("========== CUSTOM INPUT FOLDER ==========");
+            inspect_input_dir(idir, &mut input_style_fpath, &mut
+                              input_template_fpath, &template, &style)?;
+        }
+        // ask for lib options if none are provided (if at least one is
+        // provided, it is assumed the user is using the optional arguments, so
+        // no prompt
+        if !*shower && !*mathjax {
             let input_shower:String = user_input("=> Include shower \
 library ([N]/y): ");
             if input_shower == "y" || input_shower == "yes" {
                 b_input_shower = true;
             }
-        }
-        if !*mathjax {
             let input_mj:String = user_input("=> Include mathjax \
 library ([N]/y): ");
             if input_mj == "y" || input_mj == "yes" {
@@ -1148,8 +1178,8 @@ from `{}`", fpath.display()))?
     if *shower || b_input_shower
                || s_stylesheet.contains("Roboto")
                || s_stylesheet.contains("roboto")
-               || matches!(theme, Stylesheet::DdBasic)
-               || matches!(theme, Stylesheet::DdVars) {
+               || matches!(style, Stylesheet::DdBasic)
+               || matches!(style, Stylesheet::DdVars) {
 
         if *no_inline_fonts {
             add_font_files(styles_dir.clone())?;
@@ -1183,7 +1213,7 @@ from `{}`", fpath.display()))?
     }
 
     // include stylesheet
-    match theme {
+    match style {
         Stylesheet::None => { () }
         Stylesheet::DdBasic => {
             let fname = "dd_basic.css";
@@ -1207,7 +1237,7 @@ from `{}`", fpath.display()))?
         }
     }
     // custom stylesheet, giving priority to input stylesheet
-    // (can be in addition to theme)
+    // (can be in addition to style)
     if let Some(css_path) = &input_style_fpath {
         let custom_css_content = std::fs::read_to_string(css_path)
             .with_context(|| format!("Failed to read CSS stylesheet \
@@ -1345,7 +1375,7 @@ from `{}`", css_path.display()))?;
 }
 
 fn update_presentation(input_dir:&std::path::PathBuf,
-                       theme:&Stylesheet,
+                       style:&Stylesheet,
                        css_path:&Option<std::path::PathBuf>,
                        shower:&bool,
                        mathjax:&bool)
@@ -1413,7 +1443,7 @@ was already added, ignoring...", SHOWER_FNAME_OUT_CSS);
     }
 
     // include stylesheet
-    match theme {
+    match style {
         Stylesheet::None => { () }
         Stylesheet::DdBasic => {
             let fname = "dd_basic.css";
@@ -1562,6 +1592,7 @@ from `{}`", css_path.display()))?;
 }
 
 fn publish_presentation(input_dir:&std::path::PathBuf,
+                        git_root_dir:&std::path::PathBuf,
                         commit:&str, method:&PubMethod,
                         ssh_key:&std::path::PathBuf, ssh_pass:&str,
                         remote_endpoint:&Option<String>,
@@ -1593,16 +1624,19 @@ fn publish_presentation(input_dir:&std::path::PathBuf,
                     ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?;
             } else
             {
-                publish_to_git(input_dir, commit, method,
+                publish_to_git(input_dir, git_root_dir, commit, method,
                         ssh_key_path, ssh_pass, &mut v_files_incl)?;
             }
         },
-        PubMethod::Github => publish_to_git(input_dir, commit, method,
-            ssh_key_path, ssh_pass, &mut v_files_incl)?,
-        PubMethod::Gitlab => publish_to_git(input_dir, commit, method,
-            ssh_key_path, ssh_pass, &mut v_files_incl)?,
-        PubMethod::Scp => scp_upload_files(remote_endpoint, username, output_dir,
-            ssh_key_path, ssh_pass, &mut v_files_incl, input_dir)?
+        PubMethod::Github => publish_to_git(input_dir, git_root_dir, commit,
+                                            method, ssh_key_path, ssh_pass,
+                                            &mut v_files_incl)?,
+        PubMethod::Gitlab => publish_to_git(input_dir, git_root_dir, commit,
+                                            method, ssh_key_path, ssh_pass,
+                                            &mut v_files_incl)?,
+        PubMethod::Scp => scp_upload_files(remote_endpoint, username,
+                                           output_dir, ssh_key_path, ssh_pass,
+                                           &mut v_files_incl, input_dir)?
     };
 
     Ok(())
@@ -1682,12 +1716,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // matches just as you would the top level cmd
     match &cli.command {
         Commands::Create { template, template_path, input_directory,
-                           theme, css_path, no_inline_fonts,
+                           style, css_path, no_inline_fonts,
                            output_dir, shower, mathjax } => {
             create_presentation(&template,
                                 template_path,
                                 input_directory,
-                                &theme,
+                                &style,
                                 css_path,
                                 output_dir,
                                 shower,
@@ -1695,19 +1729,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 no_inline_fonts)?;
         }
 
-        Commands::Update { input_dir, theme, css_path,
+        Commands::Update { input_dir, style, css_path,
                            shower, mathjax } => {
             update_presentation(input_dir,
-                                &theme,
+                                &style,
                                 css_path,
                                 shower,
                                 mathjax)?;
         }
 
-        Commands::Publish { input_dir, commit, method,
+        Commands::Publish { input_dir, git_root_dir, commit, method,
                             ssh_key, ssh_pass, endpoint, username, output_dir,
                             include } => {
             publish_presentation(input_dir,
+                                 git_root_dir,
                                  &commit,
                                  &method,
                                  &ssh_key,

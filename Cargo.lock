@@ -234,7 +234,7 @@ dependencies = [
 
 [[package]]
 name = "compono"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -245,6 +245,7 @@ dependencies = [
  "git2",
  "glob",
  "itertools",
+ "pathdiff",
  "predicates",
  "rpassword",
  "ssh2",
@@ -766,6 +767,12 @@ dependencies = [
  "rand_core",
  "subtle",
 ]
+
+[[package]]
+name = "pathdiff"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 
 [[package]]
 name = "pbkdf2"

@@ -38,9 +38,9 @@ Initialise an <b>example presentation</b>, including the [`shower`](https://gith
 libraries, as well as the [`dd-basic`](./src/styles/dd_basic.css) <b>theme</b>:
 
 ```sh
-compono create --theme dd-basic --template example --shower --mathjax
+compono create --style dd-basic --template example --shower --mathjax
 ```
-(<i>short version</i>: `compono create -t dd-basic -T example -s -m`)
+(<i>short version</i>: `compono create -s dd-basic -t example -S -m`)
 
 The output of this command is [available here](https://digitaldasein.github.io/compono/example-dd-basic/).
 
@@ -80,6 +80,9 @@ When running `compono create`, a prompt will also ask to include libraries such 
 ### Available options and subcommands
 
 ```
+A batteries-included utility for creating, publishing, and archiving
+component-based HTML presentations
+
 USAGE:
     compono <SUBCOMMAND>
 
@@ -92,6 +95,7 @@ SUBCOMMANDS:
     create     Initialise new HTML presentation [aliases: init, new]
     help       Print this message or the help of the given subcommand(s)
     publish    Publish HTML presentation [aliases: pub]
+    update     Update your setup (add stylesheets, libraries, ...) [aliases:
 ```
 
 ### Create
@@ -125,15 +129,15 @@ OPTIONS:
     -p, --template-path <TEMPLATE_PATH>
             Path to custom HTML template
 
-    -s, --shower
-            Include shower presentation javascript core
-
-    -t, --theme <THEME>
-            Theme (Built-in CSS styles). For a custom css path, see the
+    -s, --style <STYLE>
+            Style (Built-in CSS styles). For a custom css path, see the
             `--css-path` option [default: none] [possible values: none, dd-vars,
             dd-basic]
 
-    -T, --template <TEMPLATE>
+    -S, --shower
+            Include shower presentation javascript core
+
+    -t, --template <TEMPLATE>
             Use HTML template for presentation. For a custom template path, see
             the `--template-path` option [default: minimal] [possible values:
             minimal, css-vars, example, example-css-vars]
@@ -163,13 +167,13 @@ OPTIONS:
     -m, --mathjax
             Include mathjax engine for rendering math (LaTeX-like)
 
-    -s, --shower
-            Include shower presentation javascript core
-
-    -t, --theme <THEME>
-            Theme (Built-in CSS styles). For a custom css path, see the
+    -s, --style <STYLE>
+            Style (Built-in CSS styles). For a custom css path, see the
             `--css-path` option [default: none] [possible values: none, dd-vars,
             dd-basic]
+
+    -s, --shower
+            Include shower presentation javascript core
 
     -V, --version
             Print version information
@@ -178,7 +182,7 @@ OPTIONS:
 ### Publish
 
 _Note that by default, the `src` tags in the index.html are checked to determine which files to **include for publishing**. Alternative methods can be
-set with the `--method` option._
+set with the `--include` option._
 
 ```
 Publish HTML presentation
@@ -193,6 +197,9 @@ OPTIONS:
 
     -e, --endpoint <ENDPOINT>
             Remote endpoint (IP address/URL) (for `scp` method)
+
+    -g, --git-root-dir <GIT_ROOT_DIR>
+            Path to git project root (relative or absolute) [default: ./]
 
     -h, --help
             Print help information
